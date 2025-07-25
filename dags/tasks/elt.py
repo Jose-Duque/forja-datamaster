@@ -60,12 +60,20 @@ def extract_load_transform():
                 sql=Ddl(table_name).create_table(),
                 autocommit=False
             )
+    
+    with TaskGroup("insert_table") as insert_table_postgres:
+        for table_name in TABLE_NAMES:
+            PostgresOperator(
+                task_id=f"insert_tabela_{table_name}",
+                postgres_conn_id=POSTGRES_CONN_ID,
+                sql=Dml(table_name).insert_table(),
+                autocommit=False
+            )
+    
     finish = EmptyOperator(task_id="finish")
-
     chain(
         init,
         create_table_postgres,
         finish
     )
-
 dag = extract_load_transform()
