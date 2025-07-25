@@ -1,0 +1,12 @@
+project_name                    = "datamaster"
+prefix                          = "mydatalake"
+resource_group_name             = "rg-br-datamaster"
+location                        = "East US"
+environment                     = "dev"
+storage_account_name            = "stgbrdatalake"
+key_vault_name                  = "kvsecretsdb"
+spn_display_name                = "spn-datamaster-access"
+container_names                 = ["raw", "bronze", "silver", "gold"]
+databricks_workspace            = "datamasterbr"
+databricks_user                = "duque.datamaster@outlook.com"
+cluster_name                    = "data-processing-cluster"

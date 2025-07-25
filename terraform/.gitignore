@@ -1,15 +1,8 @@
-# Diretórios e arquivos do Terraform
 .terraform/
 .terraform.lock.hcl
 *.tfplan
-*.tfvars
-*.tfvars.json
-.env
-.env.*
 *.backup
 terraform.tfstate
 terraform.tfstate.backup
-crash.log
-*.log
-*.out
-*.tmp
+.terraform.tfstate.lock.info
+.env
