@@ -28,7 +28,7 @@ Este projeto provisiona:
 ## Estrutura
 
 ```bash
-infra/
+terraform/
 ├── providers.tf
 ├── main.tf
 ├── databricks.tf
