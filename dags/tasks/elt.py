@@ -47,7 +47,7 @@ default_args = {
     default_args=default_args,
     catchup=False,
     max_active_runs=1,
-    tags=["azure", "databricks", "development", "extract", "load", "transform"]
+    tags=["azure", "databricks", "development", "extract", "ingestion" "load", "transform"]
 )
 def extract_load_transform():
     init = EmptyOperator(task_id="init")
@@ -70,6 +70,14 @@ def extract_load_transform():
                 autocommit=False
             )
     
+    with TaskGroup("ingestion_to_datalake") as save_file_datalake:
+        for table_name in TABLE_NAMES:
+            PythonOperator(
+                task_id=f"ingestion_{table_name}_to_datalake",
+                python_callable=ExtractDbSaveToAzure(db_config, azure_config).run_pipeline,
+                op_args=[table_name]
+            )
+
     finish = EmptyOperator(task_id="finish")
     chain(
         init,
