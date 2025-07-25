@@ -14,7 +14,6 @@ class ExtractDbSaveToAzure:
         self.azure_config = azure_config
         self.timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         
-        # Configuração do logger
         logging.basicConfig(
             filename="app.log",
             level=logging.INFO,
@@ -105,25 +104,3 @@ if __name__ == "__main__":
     # Criando e executando a pipeline
     pipeline = ExtractDbSaveToAzure(db_config, azure_config)
     pipeline.run_pipeline("cidades")
-
-
-    # SECRET_KEY=mysecret
-    # DATABASE_URL=mysql://user:password@localhost/db
-    # connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-
-
-    # import os
-
-    # load_dotenv()  # Carrega as variáveis do arquivo .env
-
-    # secret_key = os.getenv("SECRET_KEY")
-    # db_url = os.getenv("DATABASE_URL")
-
-    # print(secret_key)  # mysecret
-    # print(db_url)  # mysql://user:password@localhost/db
-    # import os
-
-    # secret_key = os.getenv("SECRET_KEY")
-    # print(secret_key)
-
-    
