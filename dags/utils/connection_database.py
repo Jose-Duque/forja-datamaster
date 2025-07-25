@@ -60,17 +60,14 @@ class ExtractDbSaveToAzure:
                 self.log_message("warning", "Nenhum dado foi extraído. Salvamento abortado.")
                 return
 
-            # Cria conexão com o Blob Storage
             blob_service_client = BlobServiceClient.from_connection_string(self.azure_config["connection_string"])
             container_client = blob_service_client.get_container_client(self.azure_config["container_name"])
             blob_client = container_client.get_blob_client(f"{table_name}/{self.timestamp}.csv")
 
-            # Cria DataFrame e converte para CSV (com header)
             df = pd.DataFrame(data=data, columns=column_names)
             csv_buffer = StringIO()
             df.to_csv(csv_buffer, index=False)
 
-            # Faz upload para o Azure Blob Storage
             blob_client.upload_blob(csv_buffer.getvalue(), overwrite=True)
             self.log_message("info", f"Arquivo {table_name}/{self.timestamp}.csv enviado para o Azure com sucesso!")
 
@@ -83,24 +80,3 @@ class ExtractDbSaveToAzure:
         data, column_names = self.extract_data(table_name)
         self.save_to_azure(data, column_names, table_name)
         self.log_message("info", f"Pipeline finalizado para a tabela {table_name}.")
-
-if __name__ == "__main__":
-    from dotenv import load_dotenv
-    load_dotenv()
-    
-    db_config = {
-        "dbname": os.getenv("DB_NAME"),
-        "user": os.getenv("DB_USER"),
-        "password": os.getenv("DB_PASSWORD"),
-        "host": os.getenv("DB_HOST"),
-        "port": os.getenv("DB_PORT")
-    }
-
-    azure_config = {
-        "connection_string": os.getenv("AZURE_CONNECTION_STRING"),
-        "container_name": os.getenv("AZURE_CONTAINER_NAME")
-    }
-    
-    # Criando e executando a pipeline
-    pipeline = ExtractDbSaveToAzure(db_config, azure_config)
-    pipeline.run_pipeline("cidades")
