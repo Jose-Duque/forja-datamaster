@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from dags.models.ddl import Ddl
 from dags.models.dml import Dml
-from dags.utils.connection_database import ExtractDbSaveToAzure
+from dags.utils.data_export_pipeline import DatabaseToAzureBlobPipeline
 from dags.utils.terraform_outputs import TerraformOutputManager
 
 from airflow.decorators import dag, task_group
@@ -70,7 +70,7 @@ def extract_load_transform():
                 autocommit=False
             )
     
-    with TaskGroup("ingestion_to_datalake") as save_file_datalake:
+    with TaskGroup("ingestion_to_datalake") as ingestion_file_datalake:
         for table_name in TABLE_NAMES:
             PythonOperator(
                 task_id=f"ingestion_{table_name}_to_datalake",

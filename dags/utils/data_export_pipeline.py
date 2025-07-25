@@ -8,7 +8,7 @@ from azure.storage.blob import BlobServiceClient
 import logging
 from datetime import datetime
 
-class ExtractDbSaveToAzure:
+class DatabaseToAzureBlobPipeline:
     def __init__(self, db_config, azure_config):
         self.db_config = db_config
         self.azure_config = azure_config
@@ -73,6 +73,23 @@ class ExtractDbSaveToAzure:
 
         except Exception as e:
             raise Exception(self.log_message("error", f"Erro ao salvar os dados no Azure: {e}"))
+
+    def delete_files_from_container(self, prefix=None):
+        try:
+            blob_service_client = BlobServiceClient.from_connection_string(self.azure_config["connection_string"])
+            container_client = blob_service_client.get_container_client(self.azure_config["container_name"])
+
+            blobs_to_delete = container_client.list_blobs(name_starts_with=prefix)
+            deleted_count = 0
+            for blob in blobs_to_delete:
+                container_client.delete_blob(blob.name)
+                deleted_count += 1
+                self.log_message("info", f"Blob deletado: {blob.name}")
+
+            self.log_message("info", f"Total de arquivos deletados: {deleted_count}")
+
+        except Exception as e:
+            self.log_message("error", f"Erro ao deletar arquivos do container: {e}")
 
     def run_pipeline(self, table_name):
         """Executa a extração e envio dos dados."""
