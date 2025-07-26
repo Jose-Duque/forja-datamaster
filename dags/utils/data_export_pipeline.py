@@ -2,8 +2,6 @@ import os
 from io import StringIO
 import psycopg2
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
 from azure.storage.blob import BlobServiceClient
 import logging
 from datetime import datetime
@@ -74,22 +72,25 @@ class DatabaseToAzureBlobPipeline:
         except Exception as e:
             raise Exception(self.log_message("error", f"Erro ao salvar os dados no Azure: {e}"))
 
-    def delete_files_from_container(self, prefix=None):
+    def delete_blobs_inside_folder(self, folder: str):
         try:
             blob_service_client = BlobServiceClient.from_connection_string(self.azure_config["connection_string"])
             container_client = blob_service_client.get_container_client(self.azure_config["container_name"])
 
-            blobs_to_delete = container_client.list_blobs(name_starts_with=prefix)
+            blobs_to_delete = container_client.list_blobs(name_starts_with=folder)
+
             deleted_count = 0
             for blob in blobs_to_delete:
-                container_client.delete_blob(blob.name)
-                deleted_count += 1
-                self.log_message("info", f"Blob deletado: {blob.name}")
+                if blob.name != folder and not blob.name.endswith("/"):
+                    container_client.delete_blob(blob.name)
+                    deleted_count += 1
+                    self.log_message("info", f"Blob deletado: {blob.name}")
 
-            self.log_message("info", f"Total de arquivos deletados: {deleted_count}")
+            self.log_message("info", f"Total de arquivos deletados dentro de '{folder}': {deleted_count}")
 
         except Exception as e:
-            self.log_message("error", f"Erro ao deletar arquivos do container: {e}")
+            self.log_message("error", f"Erro ao deletar blobs dentro de '{folder}': {e}")
+
 
     def run_pipeline(self, table_name):
         """Executa a extração e envio dos dados."""

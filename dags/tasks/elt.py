@@ -6,14 +6,14 @@ from dags.models.dml import Dml
 from dags.utils.data_export_pipeline import DatabaseToAzureBlobPipeline
 from dags.utils.terraform_outputs import TerraformOutputManager
 
-from airflow.decorators import dag, task_group
+from airflow.decorators import dag
 from airflow.models.baseoperator import chain
 from airflow.operators.empty import EmptyOperator
 from airflow.utils.task_group import TaskGroup
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.operators.python import PythonOperator
-from astro_databricks import DatabricksNotebookOperator, DatabricksWorkflowTaskGroup
 from airflow.providers.databricks.operators.databricks_sql import DatabricksSqlOperator
+from astro_databricks import DatabricksNotebookOperator, DatabricksWorkflowTaskGroup
 
 POSTGRES_CONN_ID = "postgres"
 DATABRICKS_CONN_ID = "databricks_default"
@@ -74,14 +74,25 @@ def extract_load_transform():
         for table_name in TABLE_NAMES:
             PythonOperator(
                 task_id=f"ingestion_{table_name}_to_datalake",
-                python_callable=ExtractDbSaveToAzure(db_config, azure_config).run_pipeline,
+                python_callable=DatabaseToAzureBlobPipeline(db_config, azure_config).run_pipeline,
                 op_args=[table_name]
+            )
+
+    with TaskGroup("delete_file_container") as delete_file_from_container:
+        for table_name in TABLE_NAMES:
+            PythonOperator(
+                task_id=f"delete_file_{table_name}_container",
+                python_callable=DatabaseToAzureBlobPipeline(db_config, azure_config).delete_blobs_inside_folder,
+                op_args=[f"{table_name}/"]
             )
 
     finish = EmptyOperator(task_id="finish")
     chain(
         init,
         create_table_postgres,
+        insert_table_postgres,
+        ingestion_file_datalake,
+        delete_file_from_container,
         finish
     )
 dag = extract_load_transform()
