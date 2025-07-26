@@ -5,6 +5,8 @@ from dags.models.ddl import Ddl
 from dags.models.dml import Dml
 from dags.utils.data_export_pipeline import DatabaseToAzureBlobPipeline
 from dags.utils.terraform_outputs import TerraformOutputManager
+from dags.config.env_config import get_env_config
+from dags.config.databricks_cluster import build_job_cluster_spec
 
 from airflow.decorators import dag
 from airflow.models.baseoperator import chain
@@ -15,30 +17,26 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.databricks.operators.databricks_sql import DatabricksSqlOperator
 from astro_databricks import DatabricksNotebookOperator, DatabricksWorkflowTaskGroup
 
-POSTGRES_CONN_ID = "postgres"
-DATABRICKS_CONN_ID = "databricks_default"
-load_dotenv()
+config = get_env_config()
+POSTGRES_CONN_ID = config["POSTGRES_CONN_ID"]
+DATABRICKS_CONN_ID = config["DATABRICKS_CONN_ID"]
+TABLE_NAMES = config["TABLE_NAMES"]
+datalake_name = config["DATALAKE_NAME"]
+spn_client_id = config["SPN_CLIENT_ID"]
+tenant_id = config["TENANT_ID"]
+secret_scope = config["SECRET_SCOPE"]
+secret_key = config["SECRET_KEY"]
+db_config = config["DB_CONFIG"]
+azure_config = config["AZURE_CONFIG"]
+default_args = config["DEFAULT_ARGS"]
 
-db_config = {
-    "dbname": os.getenv("DB_NAME"),
-    "user": os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD"),
-    "host": os.getenv("DB_HOST"),
-    "port": os.getenv("DB_PORT")
-}
-
-azure_config = {
-    "connection_string": os.getenv("AZURE_CONNECTION_STRING"),
-    "container_name": os.getenv("AZURE_CONTAINER_NAME")
-}
-
-TABLE_NAMES = ["clientes"]
-
-default_args = {
-    "owner": "duque",
-    "retries": 1,
-    "retry_delay": timedelta(minutes=5),
-}
+job_cluster_spec = build_job_cluster_spec(
+    datalake_name=datalake_name,
+    spn_client_id=spn_client_id,
+    tenant_id=tenant_id,
+    secret_scope=secret_scope,
+    secret_key=secret_key
+)
 
 @dag(
     dag_id="extract-load-transform",
@@ -47,7 +45,7 @@ default_args = {
     default_args=default_args,
     catchup=False,
     max_active_runs=1,
-    tags=["azure", "databricks", "development", "extract", "ingestion" "load", "transform"]
+    tags=["azure", "databricks", "development", "extract", "ingestion", "load", "transform"]
 )
 def extract_load_transform():
     init = EmptyOperator(task_id="init")
