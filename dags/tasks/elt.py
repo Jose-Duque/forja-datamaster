@@ -76,6 +76,32 @@ def extract_load_transform():
                 op_args=[table_name]
             )
 
+    with DatabricksWorkflowTaskGroup(
+        group_id="databricks_workflow",
+        databricks_conn_id=DATABRICKS_CONN_ID,
+        job_clusters=job_cluster_spec,
+        notebook_packages=[{"pypi": {"package": "pandas"}}],
+        notebook_params={"start_time": "{{ ds }}"},
+    ) as workflow:
+        raw_to_bronze_clientes = DatabricksNotebookOperator(
+            task_id="bronze_ingest_clientes",
+            databricks_conn_id=DATABRICKS_CONN_ID,
+            notebook_path=TerraformOutputManager().get_output("path_notebooks_bronze"),
+            source="WORKSPACE",
+            job_cluster_key=TerraformOutputManager().get_output("cluster_key"),
+            notebook_packages=[{"pypi": {"package": "scikit-learn"}}],
+            notebook_params={
+                "storage": TerraformOutputManager().get_output("storage_account_name"),
+                "container": "raw",
+                "catalog": f"""
+                            {TerraformOutputManager().get_output('databricks_workspace_name')}_{TerraformOutputManager().get_output('databricks_workspace_id')}""",
+                "table_name": "clientes",
+                "schema": "",
+                "encrypt_columns": "cpf_cnpj",
+            }
+        )
+        raw_to_bronze_clientes
+
     with TaskGroup("delete_file_container") as delete_file_from_container:
         for table_name in TABLE_NAMES:
             PythonOperator(
@@ -90,6 +116,7 @@ def extract_load_transform():
         create_table_postgres,
         insert_table_postgres,
         ingestion_file_datalake,
+        workflow,
         delete_file_from_container,
         finish
     )
