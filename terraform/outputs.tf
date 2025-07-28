@@ -60,6 +60,16 @@ output "databricks_workspace_id" {
   value       = azurerm_databricks_workspace.main.workspace_id
 }
 
+output "databricks_secret_scope" {
+  description = "Nome da Secret Scope"
+  value = databricks_secret_scope.app.name
+}
+
+output "databricks_secret" {
+  description = "Nome da Secret Databricks"
+  value = databricks_secret.publishing_api.key
+}
+
 output "cluster_id" {
   description = "Id do cluster"
   value = databricks_cluster.main.id
