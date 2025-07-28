@@ -2,7 +2,7 @@
 
 set -e  # Interrompe imediatamente se qualquer comando falhar
 
-INFRA_DIR="infra"
+INFRA_DIR="terraform"
 
 # Passo 2: Autenticação no Azure
 echo "🔐 Autenticando na Azure..."
