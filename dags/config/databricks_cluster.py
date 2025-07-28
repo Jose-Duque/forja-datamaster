@@ -6,7 +6,7 @@ def build_job_cluster_spec(datalake_name, spn_client_id, tenant_id, secret_scope
             "job_cluster_key": TerraformOutputManager().get_output("cluster_key"),
             "new_cluster": {
                 "spark_version": "13.3.x-scala2.12",
-                "node_type_id": "Standard_DS3_v2",
+                "node_type_id": "Standard_D3_v2",
                 "num_workers": 1,
                 "spark_conf": {
                     f"fs.azure.account.auth.type.{datalake_name}.dfs.core.windows.net": "OAuth",
@@ -19,7 +19,8 @@ def build_job_cluster_spec(datalake_name, spn_client_id, tenant_id, secret_scope
                     "Environment": "dev",
                     "User": "Duque",
                     "Project": "Datamaster"
-                }
+                },
+                "cluster_source": "JOB"
             }
         }
     ]
