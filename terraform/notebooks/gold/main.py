@@ -4,7 +4,6 @@
 
 # COMMAND ----------
 silver_table = dbutils.widgets.get("silver_table")
-catalog = dbutils.widgets.get("catalog")
 gold_table = dbutils.widgets.get("gold_table")
 action = dbutils.widgets.get("action").lower()
 group_by = [col.strip() for col in dbutils.widgets.get("group_by").split(",") if col.strip()]
@@ -25,6 +24,7 @@ if aggregations_input:
             aggregations[col.strip()] = func.strip()
 
 try:
+    spark.sql(f"CREATE SCHEMA IF NOT EXISTS gold")
     processor = GoldTableProcessor(silver_table)
 
     if action == "agregar":
@@ -51,7 +51,7 @@ try:
     processor.drop_duplicate_columns()
 
     display(processor.df)
-    processor.save_as_delta(catalog, gold_table, partition_by if partition_by else None)
+    processor.save_as_delta(gold_table, partition_by if partition_by else None)
 
 except Exception as e:
     import traceback

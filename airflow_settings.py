@@ -22,7 +22,14 @@ config = {
                 "conn_schema": "",
                 "conn_login": "",
                 "conn_password": manager_output.get_output(key="databricks_token_value"),
-                "conn_port": ""
+                "conn_port": "",
+                "conn_extra":
+                            {
+                            "appId": manager_output.get_output(key="service_principal_client_id"),
+                            "password": manager_output.get_output(key="service_principal_password"),
+                            "tenant": manager_output.get_output(key="service_principal_tenant_id"),
+                            "displayName": manager_output.get_output(key="service_principal_name")
+                            }
             },
         ],
         "pools": [

@@ -3,7 +3,7 @@ from dags.utils.terraform_outputs import TerraformOutputManager
 def build_job_cluster_spec(datalake_name, spn_client_id, tenant_id, secret_scope, secret_key):
     return [
         {
-            "job_cluster_key": TerraformOutputManager().get_output("cluster_key"),
+            "job_cluster_key": "teste",
             "new_cluster": {
                 "spark_version": "13.3.x-scala2.12",
                 "node_type_id": "Standard_D3_v2",
@@ -20,7 +20,8 @@ def build_job_cluster_spec(datalake_name, spn_client_id, tenant_id, secret_scope
                     "User": "Duque",
                     "Project": "Datamaster"
                 },
-                "cluster_source": "JOB"
+                "cluster_source": "JOB",
+                "policy_id": TerraformOutputManager().get_output('cluster_policy')
             }
         }
     ]

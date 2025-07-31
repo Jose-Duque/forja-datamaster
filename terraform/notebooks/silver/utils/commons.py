@@ -71,14 +71,13 @@ class SilverTableHandler:
 
     def save_to_table(self,
                        dataframe: DataFrame,
-                       catalog: str,
                        table_name: str,
                        external: bool, 
                        mode: str,
                        database: str = "silver",
                        partition_column: Optional[str] = None
                       ) -> None:
-        table_fqn = f"{catalog}.{database}.{table_name}"
+        table_fqn = f"{database}.{table_name}"
 
         try:
             print(self.logging(self.save_to_table, f"Attempting to save DataFrame to table {table_fqn} (Mode: {mode}, External: {external}, Partitioned: {partition_column is not None})."))

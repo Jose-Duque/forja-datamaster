@@ -4,7 +4,6 @@
 
 # COMMAND ----------
 action = dbutils.widgets.get("action")
-catalog = dbutils.widgets.get("catalog")
 table = dbutils.widgets.get("table")
 storage = dbutils.widgets.get("storage")
 column = dbutils.widgets.get("column")
@@ -18,6 +17,7 @@ partition_column = dbutils.widgets.get("partition_column")
 
 # COMMAND ----------
 try:
+    spark.sql(f"CREATE SCHEMA IF NOT EXISTS silver")
     handler = SilverTableHandler(table, storage)
 
     print(f"Executando ação: {action}")
@@ -59,7 +59,6 @@ try:
 
     handler.save_to_table(
         dataframe=df,
-        catalog=catalog,
         table_name=table,
         external=external,
         mode=mode,

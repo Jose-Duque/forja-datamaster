@@ -70,14 +70,19 @@ output "databricks_secret" {
   value = databricks_secret.publishing_api.key
 }
 
-output "cluster_id" {
-  description = "Id do cluster"
-  value = databricks_cluster.main.id
+output "cluster_policy" {
+  description = "Id do Cluster Policy"
+  value = databricks_cluster_policy.uc_policy.id
 }
 
-output "cluster_key" {
-  value = databricks_cluster.main.cluster_name
-}
+# output "cluster_id" {
+#   description = "Id do cluster"
+#   value = databricks_cluster.main.id
+# }
+
+# output "cluster_key" {
+#   value = databricks_cluster.main.cluster_name
+# }
 
 output "databricks_group_name" {
   description = "Nome do Grupo Databricks"

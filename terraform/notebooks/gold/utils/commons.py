@@ -101,13 +101,13 @@ class GoldTableProcessor:
                 colunas_vistas.add(col)
         self.df = self.df.select(*colunas_unicas)
 
-    def save_as_delta(self, catalog: str, gold_table_name: str, partition_by: Optional[List[str]] = None):
+    def save_as_delta(self, gold_table_name: str, partition_by: Optional[List[str]] = None):
         try:
             self.drop_duplicate_columns()  # ← aplica antes de salvar
             writer = self.df.write.format("delta").mode("overwrite")
             if partition_by:
                 writer = writer.partitionBy(*partition_by)
-            writer.option("mergeSchema", "true").saveAsTable(f"{catalog}.gold.{gold_table_name}")
+            writer.option("mergeSchema", "true").saveAsTable(f"gold.{gold_table_name}")
             print(f"Tabela Delta Gold salva com sucesso: gold.{gold_table_name}")
         except Exception as e:
             raise Exception(f"Erro ao salvar tabela Gold: {e}")

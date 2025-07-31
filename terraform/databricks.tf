@@ -5,10 +5,10 @@ resource "azurerm_databricks_workspace" "main" {
   sku                 = "premium"
 }
 
-resource "azurerm_role_assignment" "databricks_storage_contributor" {
-  scope = azurerm_storage_account.data_lake.id
-  role_definition_name = "Contributor"
+resource "azurerm_role_assignment" "spn_databricks_contributor" {
   principal_id         = azuread_service_principal.main.object_id
+  role_definition_name = "Contributor"
+  scope                = azurerm_databricks_workspace.main.id
 }
 
 resource "azurerm_databricks_access_connector" "main" {
@@ -54,35 +54,45 @@ resource "databricks_cluster_policy" "uc_policy" {
       "value": "13.3.x-scala2.12"
     },
     "node_type_id": {
-      "type": "unlimited"
+      "type": "allow",
+      "values": [
+        "Standard_DS3_v2",
+        "Standard_D4as_v5",
+        "Standard_D2as_v5"
+      ]
     },
     "num_workers": {
-      "type": "unlimited"
+      "type": "fixed",
+      "value": 1
+    },
+    "auto_termination_minutes": {
+      "type": "fixed",
+      "value": 10
     }
   })
 }
 
-resource "databricks_cluster" "main" {
-  cluster_name            = var.cluster_name
-  spark_version           = "13.3.x-scala2.12"
-  node_type_id            = "Standard_DS3_v2"
-  autotermination_minutes = 10
-  num_workers             = 1
+# resource "databricks_cluster" "main" {
+#   cluster_name            = var.cluster_name
+#   spark_version           = "13.3.x-scala2.12"
+#   node_type_id            = "Standard_DS3_v2"
+#   autotermination_minutes = 10
+#   num_workers             = 1
 
-  policy_id = databricks_cluster_policy.uc_policy.id
-  spark_conf = {
-    "fs.azure.account.auth.type.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = "OAuth"
-    "fs.azure.account.oauth.provider.type.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider"
-    "fs.azure.account.oauth2.client.id.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = azuread_application.main.client_id
-    "fs.azure.account.oauth2.client.secret.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = "{{secrets/${databricks_secret_scope.app.name}/${databricks_secret.publishing_api.key}}}"
-    "fs.azure.account.oauth2.client.endpoint.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}/oauth2/token"
-    }
-  custom_tags = {
-    Environment = var.environment
-  }
+#   policy_id = databricks_cluster_policy.uc_policy.id
+#   spark_conf = {
+#     "fs.azure.account.auth.type.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = "OAuth"
+#     "fs.azure.account.oauth.provider.type.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider"
+#     "fs.azure.account.oauth2.client.id.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = azuread_application.main.client_id
+#     "fs.azure.account.oauth2.client.secret.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = "{{secrets/${databricks_secret_scope.app.name}/${databricks_secret.publishing_api.key}}}"
+#     "fs.azure.account.oauth2.client.endpoint.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}/oauth2/token"
+#     }
+#   custom_tags = {
+#     Environment = var.environment
+#   }
 
-  depends_on = [ databricks_cluster_policy.uc_policy ]
-}
+#   depends_on = [ databricks_cluster_policy.uc_policy ]
+# }
 
 resource "databricks_notebook" "bronze_utils" {
   path     = "/Workspace/Users/${var.databricks_user}/bronze/utils/commons.py"
@@ -135,6 +145,16 @@ resource "databricks_token" "my_automation_token" {
 
 locals {
   medallion_layers = ["bronze", "silver", "gold"]
+}
+
+# Credencial para o Unity Catalog acessar o storage
+resource "databricks_storage_credential" "uc_credential" {
+  provider = databricks
+  name     = "uc_storage_credential_azure"
+  azure_managed_identity {
+    access_connector_id = azurerm_databricks_access_connector.main.id
+  }
+  comment = "Credencial para acesso ao Data Lake pelo Unity Catalog"
 }
 
 resource "databricks_schema" "medallion_layers" {

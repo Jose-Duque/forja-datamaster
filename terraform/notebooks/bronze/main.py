@@ -10,7 +10,6 @@ import json
 # COMMAND ----------
 storage = dbutils.widgets.get('storage')
 container = dbutils.widgets.get('container')
-catalog = dbutils.widgets.get('catalog')
 table_name = dbutils.widgets.get('table_name')
 schema = dbutils.widgets.get('schema')
 encrypt_columns = dbutils.widgets.get('encrypt_columns').split(",") if dbutils.widgets.get("encrypt_columns") else None
@@ -20,9 +19,7 @@ try:
     print("Initializing process")
     
     # schema = StructType.fromJson(json.loads(schema.replace("'", '"')))
-    # spark.sql("USE CATALOG workspace")
-    # spark.sql(f"CREATE SCHEMA IF NOT EXISTS bronze")
-    # spark.sql("USE SCHEMA bronze")
+    spark.sql(f"CREATE SCHEMA IF NOT EXISTS bronze")
     
     base = Commons(storage.strip(), container.strip(), table_name.strip(), schema)
     
@@ -33,8 +30,9 @@ try:
         if encrypt_columns is not None:
             df = base.encrypt_multiple_columns(df, encrypt_columns)
         
-        base.save_to_table(df, catalog)
+        base.save_to_table(df)
     else:
         print("Path or storage not found")
 except Exception as e:
     print(e)
+    raise

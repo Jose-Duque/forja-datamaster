@@ -7,8 +7,6 @@ from pyspark.sql.types import StringType
 from pyspark.sql.utils import AnalysisException
 from pyspark.dbutils import DBUtils
 from cryptography.fernet import Fernet
-import csv
-import time
 import datetime
 from pytz import timezone
 from typing import List
@@ -31,8 +29,9 @@ class Commons:
       try:
         self.dbutils.fs.ls(self.path)
         return True
-      except:
-        return False
+      except Exception as e:
+        print(f"Path ou storage não encontrado / Verificar permissão: {e}")
+        raise
 
   def load_data(self, type: str) -> DataFrame:
     try:
@@ -50,6 +49,7 @@ class Commons:
         return df
     except Exception as e:
         print(self.logging(self.load_data, f"Error loading data: {e}"))
+        raise
 
   def file_type(self) -> str:
     try:
@@ -58,6 +58,7 @@ class Commons:
       return file_type
     except Exception as e:
       print(self.logging(self.file_type, f"Error validating file type: {e}"))
+      raise
 
   def indentify_delimiter(self):
     try:
@@ -66,6 +67,7 @@ class Commons:
       return delimiter
     except:
       print(self.logging(self.indentify_delimiter, "Error indentifying delimiter"))
+      raise
   
   def validate_header(self) -> bool:
     try:
@@ -102,16 +104,17 @@ class Commons:
         print(self.logging(self.encrypt_multiple_columns, f"Error encrypting columns: {e}"))
         raise
 
-  def save_to_table(self, dataframe: DataFrame, catalog: str) -> any:
+  def save_to_table(self, dataframe: DataFrame) -> any:
     try:
-      print(self.logging(self.salve_to_table, "Saving to table"))
+      print(self.logging(self.save_to_table, "Saving to table"))
       dataframe.write.saveAsTable(
-        name=f"{catalog}.bronze.{self.table_name}", 
+        name=f"bronze.{self.table_name}", 
         format="delta", 
         mode="overwrite",
         path=self.path.replace("raw", "bronze"),
         partitionBy=["dt_ingest"]
       )
-      print(self.logging(self.salve_to_table, "Table saved"))
+      print(self.logging(self.save_to_table, "Table saved"))
     except Exception as e:
-      print(self.logging(self.salve_to_table, f"Error saving to table: {e}"))
+      print(self.logging(self.save_to_table, f"Error saving to table: {e}"))
+      raise

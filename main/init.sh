@@ -8,8 +8,10 @@ INFRA_DIR="terraform"
 echo "🔐 Autenticando na Azure..."
 az login
 
-# Passo 3: Exportar variáveis para o Terraform (opcional)
+# Passo 3: Exportar variáveis de ambiente para Terraform
 echo "📦 Exportando variáveis de ambiente para Terraform..."
+SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+export ARM_SUBSCRIPTION_ID="$SUBSCRIPTION_ID"
 
 # Passo 4: Inicializar o Terraform
 echo "🚀 Inicializando Terraform..."
