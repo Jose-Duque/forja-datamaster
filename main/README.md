@@ -38,8 +38,8 @@ O arquivo [`main/init.sh`](main/init.sh):
 ### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/seu-repo.git
-cd seu-repo
+git clone https://github.com/Jose-Duque/forja-datamaster.git
+cd forja-datamaster
 ```
 
 ### 2. Execute o script principal
@@ -54,7 +54,7 @@ Esse script executa todos os passos automaticamente. Ao final, você verá a men
 ✅ Ambiente pronto!
 🌐 Acesse o Airflow: http://localhost:8080
 👤 Usuário: admin | 🔑 Senha: admin
-⚠️ Configure as conexões em Admin > Connections.
+⚠️ A configuração do Connections no Airflow é de forma automática.
 ```
 
 ---
