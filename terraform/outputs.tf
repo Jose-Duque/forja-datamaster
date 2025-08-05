@@ -84,10 +84,10 @@ output "cluster_policy" {
 #   value = databricks_cluster.main.cluster_name
 # }
 
-output "databricks_group_name" {
-  description = "Nome do Grupo Databricks"
-  value = databricks_group.data_analysts_group.display_name
-}
+# output "databricks_group_name" {
+#   description = "Nome do Grupo Databricks"
+#   value = databricks_group.data_analysts_group.display_name
+# }
 
 output "databricks_token_value" {
   description = "Token para automação"

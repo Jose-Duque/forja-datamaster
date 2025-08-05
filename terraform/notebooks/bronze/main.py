@@ -32,7 +32,6 @@ try:
         
         base.save_to_table(df)
     else:
-        print("Path or storage not found")
+        raise ValueError("Path or storage not found")
 except Exception as e:
-    print(e)
-    raise
+    raise ValueError(f"Error: {e}")

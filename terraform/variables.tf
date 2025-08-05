@@ -46,3 +46,7 @@ variable "cluster_name" {
   description = "Nome do cluster Databricks."
   type        = string
 }
+variable "metastore_container_name" {
+  description = "Nome do container dedicado para o Unity Catalog Metastore."
+  type        = string
+}

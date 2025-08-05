@@ -30,8 +30,7 @@ class Commons:
         self.dbutils.fs.ls(self.path)
         return True
       except Exception as e:
-        print(f"Path ou storage não encontrado / Verificar permissão: {e}")
-        raise
+        raise ValueError(f"Path ou storage não encontrado / Verificar permissão: {e}")
 
   def load_data(self, type: str) -> DataFrame:
     try:
@@ -48,8 +47,7 @@ class Commons:
         df = self.spark.read.format(type).load(self.path)
         return df
     except Exception as e:
-        print(self.logging(self.load_data, f"Error loading data: {e}"))
-        raise
+        raise ValueError(self.logging(self.load_data, f"Error loading data: {e}"))
 
   def file_type(self) -> str:
     try:
@@ -57,8 +55,7 @@ class Commons:
       file_type = set(map(lambda x: x.name.split(".")[-1], self.dbutils.fs.ls(self.path)))
       return file_type
     except Exception as e:
-      print(self.logging(self.file_type, f"Error validating file type: {e}"))
-      raise
+      raise ValueError(self.logging(self.file_type, f"Error validating file type: {e}"))
 
   def indentify_delimiter(self):
     try:
@@ -66,8 +63,7 @@ class Commons:
       delimiter = list(set(filter(lambda x: x in ["\x01", "\t", ",", ";", "|"], line)))[0]
       return delimiter
     except:
-      print(self.logging(self.indentify_delimiter, "Error indentifying delimiter"))
-      raise
+      raise ValueError(self.logging(self.indentify_delimiter, "Error indentifying delimiter"))
   
   def validate_header(self) -> bool:
     try:
@@ -101,9 +97,8 @@ class Commons:
             )
         return dataframe
     except Exception as e:
-        print(self.logging(self.encrypt_multiple_columns, f"Error encrypting columns: {e}"))
-        raise
-
+      raise ValueError(self.logging(self.encrypt_multiple_columns, f"Error encrypting columns: {e}"))
+        
   def save_to_table(self, dataframe: DataFrame) -> any:
     try:
       print(self.logging(self.save_to_table, "Saving to table"))
@@ -116,5 +111,4 @@ class Commons:
       )
       print(self.logging(self.save_to_table, "Table saved"))
     except Exception as e:
-      print(self.logging(self.save_to_table, f"Error saving to table: {e}"))
-      raise
+      raise ValueError(self.logging(self.save_to_table, f"Error saving to table: {e}"))

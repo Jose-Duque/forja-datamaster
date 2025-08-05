@@ -56,4 +56,4 @@ try:
 except Exception as e:
     import traceback
     traceback.print_exc()
-    raise
+    raise ValueError(f"Error: {e}")

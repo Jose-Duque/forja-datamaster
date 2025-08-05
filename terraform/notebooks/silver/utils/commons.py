@@ -26,48 +26,42 @@ class SilverTableHandler:
             df = self.spark.table(f"bronze.{self.table}")
             return df
         except Exception as e:
-            print(self.logging(self.load_table, f"Error loading table: {e}"))
-            raise
+            raise ValueError(self.logging(self.load_table, f"Error loading table: {e}"))
 
     def filter_by_column(self, column_name: str, value: str) -> DataFrame:
         try:
             print(self.logging(self.filter_by_column, f"Filtering column"))
             return self.df.filter(F.col(column_name) == value)
         except Exception as e:
-            print(self.logging(self.filter_by_column, f"Error filtering column: {e}"))
-            raise
+            raise ValueError(self.logging(self.filter_by_column, f"Error filtering column: {e}"))
 
     def selection_columns(self, column_list: list) -> DataFrame:
         try:
             print(self.logging(self.selection_columns, f"Selecting columns"))
             return self.df.select(*column_list)
         except Exception as e:
-            print(self.logging(self.selection_columns, f"Error selecting columns: {e}"))
-            raise
+            raise ValueError(self.logging(self.selection_columns, f"Error selecting columns: {e}"))
 
     def renaming_column(self, old_name: str, new_name: str) -> DataFrame:
         try:
             print(self.logging(self.renaming_column, f"Renaming column {old_name} to {new_name}"))
             return self.df.withColumnRenamed(old_name, new_name)
         except Exception as e:
-            print(self.logging(self.renaming_column, f"Error renaming column: {e}"))
-            raise
+            raise ValueError(self.logging(self.renaming_column, f"Error renaming column: {e}"))
 
     def adding_column(self, column_name: str, value: str) -> DataFrame:
         try:
             print(self.logging(self.adding_column, f"Adding column {column_name} with value {value}"))
             return self.df.withColumn(column_name, F.lit(value))
         except Exception as e:
-            print(self.logging(self.adding_column, f"Error adding column: {e}"))  
-            raise
+            raise alueError(self.logging(self.adding_column, f"Error adding column: {e}"))  
 
     def executar_query(self, query: str) -> DataFrame:
         try:
             print(self.logging(self.executar_query, f"Executando query SQL"))
             return spark.sql(query)
         except Exception as e:
-            print(self.logging(self.executar_query, f"Error executing query SQL: {e}"))
-            raise
+            raise ValueError(self.logging(self.executar_query, f"Error executing query SQL: {e}"))
 
     def save_to_table(self,
                        dataframe: DataFrame,
@@ -107,5 +101,4 @@ class SilverTableHandler:
             )
             print(self.logging(self.save_to_table, f"Successfully submitted save operation for table {table_fqn}. Spark job will execute."))
         except Exception as e:
-            print(self.logging(self.save_to_table, f"Error saving DataFrame to table {table_fqn}: {e}"))
-            raise
+            raise ValueError(self.logging(self.save_to_table, f"Error saving DataFrame to table {table_fqn}: {e}"))

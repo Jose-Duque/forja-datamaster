@@ -66,6 +66,5 @@ try:
     )
 except Exception as e:
     import traceback
-    print("Erro durante a execução:")
     traceback.print_exc()
-    raise
+    raise ValueError(f"Erro durante a execução: {e}")

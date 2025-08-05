@@ -80,10 +80,3 @@ resource "azurerm_key_vault_secret" "spn_password" {
   value        = azuread_service_principal_password.main.value
   key_vault_id = azurerm_key_vault.main.id
 }
-
-# Role assignment para o managed identity do Databricks (se aplicável)
-resource "azurerm_role_assignment" "blob_contrib_mi" {
-  scope                = azurerm_storage_account.data_lake.id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azurerm_databricks_access_connector.main.identity[0].principal_id
-}
