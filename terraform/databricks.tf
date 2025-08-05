@@ -1,14 +1,3 @@
-provider "databricks" {
-  alias      = "account"
-
-  host       = "https://accounts.azuredatabricks.net"
-  account_id = "452cd844-0da8-498e-aeda-1da30fc5f8d8"
-
-  client_id       = "41e73722-17ec-4833-be30-912288057b9a"
-  client_secret   = "dose588abdc34fbad36ab21da248253ed873"
-  azure_tenant_id = "ec81c8cb-abe5-47b8-b6e9-e8aa10347fa0"
-}
-
 resource "azurerm_databricks_workspace" "main" {
   name                = var.databricks_workspace
   resource_group_name = azurerm_resource_group.main.name
