@@ -16,10 +16,8 @@ encrypt_columns = dbutils.widgets.get('encrypt_columns').split(",") if dbutils.w
 
 # COMMAND ----------
 try:
-    print("Inicializando o processo")
-    
+    print("Initializing the process")
     # schema = StructType.fromJson(json.loads(schema.replace("'", '"')))
-    
     base = Commons(storage.strip(), container.strip(), table_name.strip(), schema)
     
     if base.verify_path_storage():
@@ -31,6 +29,6 @@ try:
         
         base.save_to_table(df)
     else:
-        raise ValueError("Path ou storage não encontrado")
+        raise ValueError("Path or storage not found")
 except Exception as e:
-    raise ValueError(f"Error no processo: {e}")
+    raise ValueError(f"Error in the process: {e}")

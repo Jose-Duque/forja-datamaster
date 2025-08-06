@@ -6,7 +6,7 @@ class GoldTableProcessor:
     def __init__(self, silver_table_name: str):
         self.spark = SparkSession.getActiveSession()
         if not self.spark:
-            raise Exception("SparkSession não está ativa.")
+            raise Exception("SparkSession is not active.")
         
         self.silver_table_name = silver_table_name
         self.df = self._load_silver_table()
@@ -15,7 +15,7 @@ class GoldTableProcessor:
         try:
             return self.spark.table(f"datamasterbr.silver.{self.silver_table_name}")
         except Exception as e:
-            raise Exception(f"Erro ao carregar tabela Silver '{self.silver_table_name}': {e}")
+            raise Exception(f"Error loading Silver table '{self.silver_table_name}': {e}")
 
     def aggregate_multiple(self, group_columns: List[str], aggregations: Dict[str, str]):
         try:
@@ -30,7 +30,7 @@ class GoldTableProcessor:
             agg_expressions = []
             for column, func in aggregations.items():
                 if func not in functions_map:
-                    raise ValueError(f"Função de agregação '{func}' não suportada para a coluna '{column}'.")
+                    raise ValueError(f"Aggregate function '{func}' not supported for column '{column}'.")
                 agg_expressions.append(functions_map[func](column).alias(f"{func}_{column}"))
 
             aggregated_df = self.df.groupBy(*group_columns).agg(*agg_expressions)
@@ -38,14 +38,14 @@ class GoldTableProcessor:
             return self.df
 
         except Exception as e:
-            raise Exception(f"Erro ao realizar agregações múltiplas: {e}")
+            raise Exception(f"Error performing multiple aggregations: {e}")
 
     def run_query(self, query: str):
         try:
             self.df = self.spark.sql(query)
             return self.df
         except Exception as e:
-            raise Exception(f"Erro ao executar query: {e}")
+            raise Exception(f"Error executing query: {e}")
 
     def join_with_table(
         self,
@@ -80,18 +80,15 @@ class GoldTableProcessor:
             return self.df
 
         except Exception as e:
-            raise Exception(f"Erro ao realizar join com a tabela '{other_table}': {e}")
+            raise Exception(f"Error performing join with table '{other_table}': {e}")
 
     def select_columns(self, columns_to_keep: List[str]):
         missing = [col for col in columns_to_keep if col not in self.df.columns]
         if missing:
-            raise Exception(f"Colunas não encontradas no DataFrame: {missing}")
+            raise Exception(f"Columns not found in DataFrame: {missing}")
         self.df = self.df.select(*columns_to_keep)
 
     def drop_duplicate_columns(self):
-        """
-        Remove colunas duplicadas com base no nome (mantém a primeira ocorrência).
-        """
         col_counts = Counter(self.df.columns)
         colunas_vistas = set()
         colunas_unicas = []
@@ -108,6 +105,6 @@ class GoldTableProcessor:
             if partition_by:
                 writer = writer.partitionBy(*partition_by)
             writer.option("mergeSchema", "true").saveAsTable(f"datamasterbr.gold.{gold_table_name}")
-            print(f"Tabela Delta Gold salva com sucesso: gold.{gold_table_name}")
+            print(f"Delta Gold Table saved successfully: gold.{gold_table_name}")
         except Exception as e:
-            raise Exception(f"Erro ao salvar tabela Gold: {e}")
+            raise Exception(f"Error saving Gold table: {e}")

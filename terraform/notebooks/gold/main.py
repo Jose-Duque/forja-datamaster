@@ -24,26 +24,25 @@ if aggregations_input:
             aggregations[col.strip()] = func.strip()
 
 try:
-    spark.sql(f"CREATE SCHEMA IF NOT EXISTS gold")
     processor = GoldTableProcessor(silver_table)
 
     if action == "agregar":
         if not group_by or not aggregations:
-            raise ValueError("Para 'agregar', forneça 'group_by' e 'aggregations'.")
+            raise ValueError("For 'aggregate', provide 'group_by' and 'aggregations'.")
         processor.aggregate_multiple(group_by, aggregations)
 
     elif action == "query":
         if not query:
-            raise ValueError("Para 'query', forneça o parâmetro 'query'.")
+            raise ValueError("For 'query', provide the 'query' parameter.")
         processor.run_query(query)
 
     elif action == "join":
         if not join_table or not join_columns:
-            raise ValueError("Para 'join', forneça 'join_table' e 'join_columns'.")
+            raise ValueError("For 'join', provide 'join_table' and 'join_columns'.")
         processor.join_with_table(join_table, join_columns, join_type)
 
     else:
-        raise ValueError(f"Ação '{action}' não reconhecida. Use 'agregar', 'query' ou 'join'.")
+        raise ValueError(f"Action '{action}' unrecognized. Use 'aggregate', 'query', or 'join'.")
 
     if columns_to_keep:
         processor.select_columns(columns_to_keep)

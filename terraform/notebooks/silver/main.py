@@ -23,38 +23,38 @@ try:
 
     if action == 'filter':
         if not column or not value:
-            raise ValueError("Para 'filter', especifique --column e --value")
+            raise ValueError("For 'filter', specify --column e --value")
         df = handler.filter_by_column(column, value)
         display(df)
 
     elif action == 'select':
         if not columns:
-            raise ValueError("Para 'select', especifique --columns")
+            raise ValueError("For 'select', specify --columns")
         df = handler.selection_columns(columns)
         display(df)
 
     elif action == 'rename':
         if not column or not new_name:
-            raise ValueError("Para 'rename', especifique --column e --new_name")
+            raise ValueError("For 'rename', specify --column e --new_name")
         df = handler.renaming_column(column, new_name)
         display(df)
 
     elif action == 'add_col':
         if not column or not value:
-            raise ValueError("Para 'add_col', especifique --column e --value")
+            raise ValueError("For 'add_col', specify --column e --value")
         df = handler.adding_column(column, value)
         display(df)
 
     elif action == 'query':
         if not query:
-            raise ValueError("Para 'query', especifique --query")
+            raise ValueError("For 'query', specify --query")
         df = handler.executar_query(query)
         display(df)
     else:
-        raise ValueError(f"Ação desconhecida: {action}")
+        raise ValueError(f"Unknown action: {action}")
 
     if 'df' not in locals():
-        raise ValueError("Nenhuma DataFrame foi gerado para salvar.")
+        raise ValueError("No DataFrame was generated to save.")
 
     handler.save_to_table(
         dataframe=df,
@@ -66,4 +66,4 @@ try:
 except Exception as e:
     import traceback
     traceback.print_exc()
-    raise ValueError(f"Erro durante a execução: {e}")
+    raise ValueError(f"Error during execution: {e}")

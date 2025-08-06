@@ -4,114 +4,111 @@ from pyspark.sql import SparkSession
 from pyspark.sql.dataframe import DataFrame
 from pyspark.sql.functions import udf, col
 from pyspark.sql.types import StringType
+from pyspark.sql.utils import AnalysisException
 from pyspark.dbutils import DBUtils
 from cryptography.fernet import Fernet
+import datetime
 from pytz import timezone
 from typing import List
-import datetime
 
 class Commons:
-    def __init__(self, storage: str, container: str, table_name: str, schema=None):
-        self.spark = SparkSession.builder.appName("SparkApp").getOrCreate()
-        self.dbutils = DBUtils(self.spark)
-        self.path = f"abfss://{container}@{storage}.dfs.core.windows.net/{table_name}/"
-        # self.path = self.dbutils.fs.ls(f"/Volumes/workspace/{container}/{table_name}")[0].path
-        self.schema = schema
-        self.table_name = table_name
+  def __init__(self, storage, container, table_name, schema):
+    self.spark = SparkSession.builder.appName("SparkApp").getOrCreate()
+    self.dbutils = DBUtils(self.spark)
+    self.path = f"abfss://{container}@{storage}.dfs.core.windows.net/{table_name}/"
+    # self.path = self.dbutils.fs.ls(f"/Volumes/workspace/{container}/{table_name}")[0].path
+    self.schema = schema
+    self.table_name = table_name
 
-    def _log(self, func, mensagem: str) -> str:
-        tz_sp = timezone("America/Sao_Paulo")
-        agora = datetime.datetime.now(tz_sp).strftime("%Y-%m-%d %H:%M:%S")
-        return f"[ {agora} ] {func.__name__} - INFO - {mensagem}"
+  def logging(self, func, log_line):
+    tz_sp = timezone("America/Sao_Paulo")
+    now = datetime.datetime.strftime(datetime.datetime.now(tz_sp), "%Y-%m-%d %H:%M:%S")
+    return(f"[ {now} ] {func.__name__} - INFO - {log_line}")
 
-    def verificar_path_storage(self) -> bool:
-        try:
-            self.dbutils.fs.ls(self.path)
-            return True
-        except Exception as e:
-            raise ValueError(f"Caminho ou storage não encontrado / Verifique permissões: {e}")
+  def verify_path_storage(self) -> bool:
+      try:
+        self.dbutils.fs.ls(self.path)
+        return True
+      except Exception as e:
+        raise ValueError(f"Path ou storage não encontrado / Verificar permissão: {e}")
 
-    def tipo_arquivos(self) -> set:
-        try:
-            print(self._log(self.tipo_arquivos, "Validando tipo de arquivo"))
-            tipos = set(
-                map(lambda x: x.name.split(".")[-1], self.dbutils.fs.ls(self.path))
+  def load_data(self, type: str) -> DataFrame:
+    try:
+      print(self.logging(self.load_data, "Loading data"))
+      if type == "csv":
+        df = self.spark.read.format(type).load(
+                                              path=self.path, 
+                                              schema=self.schema if self.schema else None, 
+                                              header=self.validate_header(), 
+                                              delimiter=self.indentify_delimiter()
+                                            )
+        return df
+      else:
+        df = self.spark.read.format(type).load(self.path)
+        return df
+    except Exception as e:
+        raise ValueError(self.logging(self.load_data, f"Error loading data: {e}"))
+
+  def file_type(self) -> str:
+    try:
+      print(self.logging(self.file_type, "Validating file type"))
+      file_type = set(map(lambda x: x.name.split(".")[-1], self.dbutils.fs.ls(self.path)))
+      return file_type
+    except Exception as e:
+      raise ValueError(self.logging(self.file_type, f"Error validating file type: {e}"))
+
+  def indentify_delimiter(self):
+    try:
+      line = self.spark.read.format("text").load(self.path).take(1)[0][0]
+      delimiter = list(set(filter(lambda x: x in ["\x01", "\t", ",", ";", "|"], line)))[0]
+      return delimiter
+    except:
+      raise ValueError(self.logging(self.indentify_delimiter, "Error indentifying delimiter"))
+  
+  def validate_header(self) -> bool:
+    try:
+      print(self.logging(self.validate_header, "Validating header"))
+      df_with_header = self.spark.read.option("header", "true").csv(self.path)
+      df_no_header = self.spark.read.option("header", "false").csv(self.path)
+
+      header_likely = df_with_header.columns != df_no_header.columns
+      print(self.logging(self.validate_header, "Header is valid"))
+      return header_likely
+    except Exception as e:
+      print(self.logging(self.validate_header, "Header is invalid"))
+      return False
+  
+  def encrypt_multiple_columns(self, dataframe: DataFrame, columns: List[str]) -> DataFrame:
+    try:
+        print(self.logging(self.encrypt_multiple_columns, f"Encrypting columns: {columns}"))
+        key = Fernet.generate_key()
+        cipher_suite = Fernet(key)
+
+        def encrypt_value(val):
+            if val is None:
+                return None
+            return cipher_suite.encrypt(val.encode()).decode("utf-8")
+
+        encrypt_udf = udf(encrypt_value, StringType())
+        for col_name in columns:
+            dataframe = dataframe.withColumn(
+                f"{col_name}",
+                encrypt_udf(col(col_name))
             )
-            return tipos
-        except Exception as e:
-            raise ValueError(self._log(self.tipo_arquivos, f"Erro ao validar tipo de arquivo: {e}"))
+        return dataframe
+    except Exception as e:
+      raise ValueError(self.logging(self.encrypt_multiple_columns, f"Error encrypting columns: {e}"))
+        
+  def save_to_table(self, dataframe: DataFrame) -> any:
+    try:
+      print(self.logging(self.save_to_table, "Saving to table"))
+      dataframe.write.format("delta") \
+        .partitionBy("dt_ingest") \
+        .mode("overwrite") \
+        .option("mergeSchema", "true") \
+        .saveAsTable(f"datamasterbr.bronze.{self.table_name}")
 
-    def identificar_delimitador(self) -> str:
-        try:
-            linha = self.spark.read.format("text").load(self.path).take(1)[0][0]
-            delimitador = list(
-                set(filter(lambda x: x in ["\x01", "\t", ",", ";", "|"], linha))
-            )[0]
-            return delimitador
-        except Exception:
-            raise ValueError(self._log(self.identificar_delimitador, "Erro ao identificar delimitador"))
 
-    def validar_header(self) -> bool:
-        try:
-            print(self._log(self.validar_header, "Validando cabeçalho"))
-            df_com_header = self.spark.read.option("header", "true").csv(self.path)
-            df_sem_header = self.spark.read.option("header", "false").csv(self.path)
-            header_valido = df_com_header.columns != df_sem_header.columns
-            print(self._log(self.validar_header, "Cabeçalho validado"))
-            return header_valido
-        except Exception:
-            print(self._log(self.validar_header, "Cabeçalho inválido"))
-            return False
-
-    def carregar_dados(self, formato: str) -> DataFrame:
-        try:
-            print(self._log(self.carregar_dados, "Carregando dados"))
-            if formato == "csv":
-                df = (
-                    self.spark.read.format(formato)
-                    .load(
-                        path=self.path,
-                        schema=self.schema if self.schema else None,
-                        header=self.validar_header(),
-                        delimiter=self.identificar_delimitador(),
-                    )
-                )
-            else:
-                df = self.spark.read.format(formato).load(self.path)
-            return df
-        except Exception as e:
-            raise ValueError(self._log(self.carregar_dados, f"Erro ao carregar dados: {e}"))
-
-    def criptografar_colunas(self, dataframe: DataFrame, colunas: List[str]) -> DataFrame:
-        try:
-            print(self._log(self.criptografar_colunas, f"Criptografando colunas: {colunas}"))
-            chave = Fernet.generate_key()
-            cipher_suite = Fernet(chave)
-
-            def _criptografar(valor):
-                if valor is None:
-                    return None
-                return cipher_suite.encrypt(valor.encode()).decode("utf-8")
-
-            criptografar_udf = udf(_criptografar, StringType())
-
-            for nome_coluna in colunas:
-                dataframe = dataframe.withColumn(nome_coluna, criptografar_udf(col(nome_coluna)))
-
-            return dataframe
-        except Exception as e:
-            raise ValueError(self._log(self.criptografar_colunas, f"Erro ao criptografar colunas: {e}"))
-
-    def salvar_tabela(self, dataframe: DataFrame) -> None:
-        try:
-            print(self._log(self.salvar_tabela, "Salvando na tabela"))
-            (
-                dataframe.write.format("delta")
-                .partitionBy("dt_ingest")
-                .mode("overwrite")
-                .option("mergeSchema", "true")
-                .saveAsTable(f"datamasterbr.bronze.{self.table_name}")
-            )
-            print(self._log(self.salvar_tabela, "Tabela salva com sucesso"))
-        except Exception as e:
-            raise ValueError(self._log(self.salvar_tabela, f"Erro ao salvar na tabela: {e}"))
+      print(self.logging(self.save_to_table, "Table saved"))
+    except Exception as e:
+      raise ValueError(self.logging(self.save_to_table, f"Error saving to table: {e}"))

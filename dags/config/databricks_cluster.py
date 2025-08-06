@@ -3,7 +3,7 @@ from dags.utils.terraform_outputs import TerraformOutputManager
 def build_job_cluster_spec(datalake_name, spn_client_id, tenant_id, secret_scope, secret_key):
     return [
         {
-            "job_cluster_key": "data-analytics",
+            "job_cluster_key": "cluster-data-analytics",
             "new_cluster": {
                 "spark_version": "13.3.x-scala2.12",
                 "node_type_id": "Standard_DS3_v2",
