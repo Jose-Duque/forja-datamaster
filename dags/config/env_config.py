@@ -7,7 +7,7 @@ def get_env_config():
     return {
         "POSTGRES_CONN_ID": "postgres",
         "DATABRICKS_CONN_ID": "databricks_default",
-        "TABLE_NAMES": ["clientes"],
+        "TABLE_NAMES": ["clientes", "vendedores", "vendas"],
         "DATALAKE_NAME": os.getenv("DATALAKE_NAME"),
         "SPN_CLIENT_ID": os.getenv("SPN_CLIENT_ID"),
         "TENANT_ID": os.getenv("TENANT_ID"),

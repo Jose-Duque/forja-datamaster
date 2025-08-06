@@ -3,10 +3,10 @@ from dags.utils.terraform_outputs import TerraformOutputManager
 def build_job_cluster_spec(datalake_name, spn_client_id, tenant_id, secret_scope, secret_key):
     return [
         {
-            "job_cluster_key": "teste",
+            "job_cluster_key": "data-analytics",
             "new_cluster": {
                 "spark_version": "13.3.x-scala2.12",
-                "node_type_id": "Standard_D3_v2",
+                "node_type_id": "Standard_DS3_v2",
                 "num_workers": 1,
                 "spark_conf": {
                     f"fs.azure.account.auth.type.{datalake_name}.dfs.core.windows.net": "OAuth",
@@ -15,8 +15,9 @@ def build_job_cluster_spec(datalake_name, spn_client_id, tenant_id, secret_scope
                     f"fs.azure.account.oauth2.client.secret.{datalake_name}.dfs.core.windows.net": f"{{{{secrets/{secret_scope}/{secret_key}}}}}",
                     f"fs.azure.account.oauth2.client.endpoint.{datalake_name}.dfs.core.windows.net": f"https://login.microsoftonline.com/{tenant_id}/oauth2/token"
                 },
+                "data_security_mode": "USER_ISOLATION",
                 "custom_tags": {
-                    "Environment": "dev",
+                    "Environment": "analytics",
                     "User": "Duque",
                     "Project": "Datamaster"
                 },

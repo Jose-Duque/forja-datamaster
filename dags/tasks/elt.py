@@ -8,7 +8,7 @@ from dags.utils.terraform_outputs import TerraformOutputManager
 from dags.config.env_config import get_env_config
 from dags.config.databricks_cluster import build_job_cluster_spec
 
-from airflow.decorators import dag
+from airflow.decorators import dag, task_group
 from airflow.models.baseoperator import chain
 from airflow.operators.empty import EmptyOperator
 from airflow.utils.task_group import TaskGroup
@@ -82,13 +82,14 @@ def extract_load_transform():
         job_clusters=job_cluster_spec,
         notebook_params={"start_time": "{{ ds }}"},
     ) as workflow:
+        
         raw_to_bronze_clientes = DatabricksNotebookOperator(
             task_id="bronze_ingest_clientes",
             databricks_conn_id=DATABRICKS_CONN_ID,
             notebook_path=TerraformOutputManager().get_output("path_notebooks_bronze"),
             source="WORKSPACE",
             # job_cluster_key=TerraformOutputManager().get_output("cluster_key"),
-            job_cluster_key="airflow",
+            job_cluster_key="data-analytics",
             notebook_params={
                 "storage": TerraformOutputManager().get_output("storage_account_name"),
                 "container": "raw",
@@ -97,7 +98,134 @@ def extract_load_transform():
                 "encrypt_columns": "cpf_cnpj",
             }
         )
-        raw_to_bronze_clientes
+
+        raw_to_bronze_vendedores = DatabricksNotebookOperator(
+            task_id="bronze_ingest_vendedores",
+            databricks_conn_id=DATABRICKS_CONN_ID,
+            notebook_path=TerraformOutputManager().get_output("path_notebooks_bronze"),
+            source="WORKSPACE",
+            job_cluster_key="data-analytics",
+            notebook_params={
+                "storage": TerraformOutputManager().get_output("storage_account_name"),
+                "container": "raw",
+                "table_name": "vendedores",
+                "schema": "",
+                "encrypt_columns": "",
+            }
+        )
+
+        raw_to_bronze_vendas = DatabricksNotebookOperator(
+            task_id="bronze_ingest_vendas",
+            databricks_conn_id=DATABRICKS_CONN_ID,
+            notebook_path=TerraformOutputManager().get_output("path_notebooks_bronze"),
+            source="WORKSPACE",
+            job_cluster_key="data-analytics",
+            notebook_params={
+                "storage": TerraformOutputManager().get_output("storage_account_name"),
+                "container": "raw",
+                "table_name": "vendas",
+                "schema": "",
+                "encrypt_columns": "",
+            }
+        )
+
+        @task_group(group_id="inner_task_group")
+        def transform_group_silver():
+            silver_clientes_transform = DatabricksNotebookOperator(
+                task_id="silver_clientes_transform",
+                databricks_conn_id=DATABRICKS_CONN_ID,
+                notebook_path=TerraformOutputManager().get_output("path_notebooks_silver"),
+                source="WORKSPACE",
+                job_cluster_key="data-analytics",
+                notebook_params={
+                    "action":"rename",
+                    "table":"clientes",
+                    "storage":TerraformOutputManager().get_output("storage_account_name"),
+                    "column":"cliente",
+                    "value":"",
+                    "new_name":"nome_cliente",
+                    "columns":"",
+                    "query":"",
+                    "external":False,
+                    "mode":"overwrite",
+                    "partition_column":"dt_ingest"
+                }
+            )
+
+            silver_vendedores_transform = DatabricksNotebookOperator(
+                task_id="silver_vendedores_transform",
+                databricks_conn_id=DATABRICKS_CONN_ID,
+                notebook_path=TerraformOutputManager().get_output("path_notebooks_silver"),
+                source="WORKSPACE",
+                job_cluster_key="data-analytics",
+                notebook_params={
+                    "action":"query",
+                    "table":"vendedores",
+                    "storage":TerraformOutputManager().get_output("storage_account_name"),
+                    "column":"",
+                    "value":"",
+                    "new_name":"",
+                    "columns":"",
+                    "query":"""SELECT
+                                *,
+                                id_vendedores IS NOT NULL AS ativo
+                            FROM datamasterbr.bronze.vendedores""",
+                    "external":False,
+                    "mode":"overwrite",
+                    "partition_column":"dt_ingest"
+                }
+            )
+            [silver_clientes_transform,silver_vendedores_transform]
+
+        gold_analytics = DatabricksNotebookOperator(
+            task_id="gold_analytics",
+            databricks_conn_id=DATABRICKS_CONN_ID,
+            notebook_path=TerraformOutputManager().get_output("path_notebooks_gold"),
+            source="WORKSPACE",
+            job_cluster_key="data-analytics",
+            notebook_params={
+                "silver_table": "clientes",
+                "catalog": f"""
+                            {TerraformOutputManager().get_output('databricks_workspace_name')}_{TerraformOutputManager().get_output('databricks_workspace_id')}""",
+                "gold_table": "analise_vendas_clientes",
+                "action": "query",
+                "group_by": "",
+                "aggregations_input": "",
+                "partition_by": "",
+                "columns_to_keep": "",
+                "join_table": "",
+                "join_columns": "",
+                "join_type": "",
+                "query": """
+                        SELECT
+                            c.id_clientes,
+                            c.nome_cliente,
+                            c.cpf_cnpj,
+                            c.endereco,
+                            c.id_concessionarias,
+                            COUNT(v.id_vendas) AS qtd_vendas,
+                            SUM(v.valor_pago) AS valor_total_gasto,
+                            AVG(v.valor_pago) AS ticket_medio,
+                            MIN(v.data_venda) AS primeira_compra,
+                            MAX(v.data_venda) AS ultima_compra,
+                            COUNT(DISTINCT v.id_vendedores) AS qtd_vendedores_diferentes
+                            FROM datamasterbr.silver.clientes AS c
+                            LEFT JOIN datamasterbr.bronze.vendas AS v
+                            ON c.id_clientes = v.id_clientes
+                            LEFT JOIN datamasterbr.silver.vendedores AS vd
+                            ON v.id_vendedores = vd.id_vendedores
+                            GROUP BY
+                            c.id_clientes,
+                            c.nome_cliente,
+                            c.cpf_cnpj,
+                            c.endereco,
+                            c.id_concessionarias;
+                        """
+            }
+        )
+
+        [raw_to_bronze_clientes,raw_to_bronze_vendedores,raw_to_bronze_vendas] >> transform_group_silver() >> gold_analytics
+        # raw_to_bronze_clientes
 
     # with TaskGroup("delete_file_container") as delete_file_from_container:
     #     for table_name in TABLE_NAMES:
