@@ -13,6 +13,7 @@ container = dbutils.widgets.get('container')
 table_name = dbutils.widgets.get('table_name')
 schema = dbutils.widgets.get('schema')
 encrypt_columns = dbutils.widgets.get('encrypt_columns').split(",") if dbutils.widgets.get("encrypt_columns") else None
+external = dbutils.widgets.get("external").lower() == "true"
 
 # COMMAND ----------
 try:
@@ -27,7 +28,7 @@ try:
         if encrypt_columns is not None:
             df = base.encrypt_multiple_columns(df, encrypt_columns)
         
-        base.save_to_table(df)
+        base.save_to_table(dataframe=df, external=external)
     else:
         raise ValueError("Path or storage not found")
 except Exception as e:

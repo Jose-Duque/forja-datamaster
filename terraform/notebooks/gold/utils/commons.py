@@ -58,7 +58,6 @@ class GoldTableProcessor:
         try:
             df_other = self.spark.table(f"datamasterbr.silver.{other_table}")
 
-            # Renomear colunas duplicadas que não fazem parte do join
             conflicting_cols = [col for col in df_other.columns if col in self.df.columns and col not in join_condition]
             for col in conflicting_cols:
                 df_other = df_other.withColumnRenamed(col, f"{col}_{alias_other}")
@@ -66,13 +65,10 @@ class GoldTableProcessor:
             df_a = self.df.alias(alias_main)
             df_b = df_other.alias(alias_other)
 
-            # Condição do join
             condition = [F.col(f"{alias_main}.{col}") == F.col(f"{alias_other}.{col}") for col in join_condition]
 
-            # Realiza o join
             joined_df = df_a.join(df_b, on=condition, how=join_type)
 
-            # Seleciona colunas da tabela principal + as renomeadas da secundária
             selected_columns = [F.col(f"{alias_main}.{col}").alias(col) for col in self.df.columns]
             selected_columns += [F.col(f"{alias_other}.{col}") for col in df_other.columns if col not in join_condition]
 
@@ -100,7 +96,7 @@ class GoldTableProcessor:
 
     def save_as_delta(self, gold_table_name: str, partition_by: Optional[List[str]] = None):
         try:
-            self.drop_duplicate_columns()  # ← aplica antes de salvar
+            self.drop_duplicate_columns()
             writer = self.df.write.format("delta").mode("overwrite")
             if partition_by:
                 writer = writer.partitionBy(*partition_by)

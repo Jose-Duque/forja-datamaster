@@ -1,13 +1,11 @@
 data "azurerm_client_config" "current" {}
 data "azuread_client_config" "current" {}
 
-# Resource Group
 resource "azurerm_resource_group" "main" {
   name     = var.resource_group_name
   location = var.location
 }
 
-# Storage Account (Data Lake Gen2)
 resource "azurerm_storage_account" "data_lake" {
   name                     = var.storage_account_name
   resource_group_name      = azurerm_resource_group.main.name
@@ -21,7 +19,6 @@ resource "azurerm_storage_account" "data_lake" {
   }
 }
 
-# Storage Containers (ex: raw, bronze, silver, gold)
 resource "azurerm_storage_container" "data_lake_containers" {
   for_each              = toset(var.container_names)
   name                  = each.value
@@ -31,7 +28,6 @@ resource "azurerm_storage_container" "data_lake_containers" {
   depends_on = [azurerm_storage_account.data_lake]
 }
 
-# Service Principal (Application + SPN + Password)
 resource "azuread_application" "main" {
   display_name = var.spn_display_name
   owners       = [data.azurerm_client_config.current.object_id]
@@ -52,7 +48,15 @@ resource "azurerm_role_assignment" "spn_blob_data_access" {
   principal_id         = azuread_service_principal.main.object_id
 }
 
-# Key Vault com permissões para SPN e usuário atual
+resource "azurerm_role_assignment" "spn_blob_contrib_containers" {
+  for_each = toset(local.medallion_layers)
+
+  principal_id         = azuread_service_principal.main.object_id
+  role_definition_name = "Storage Blob Data Contributor"
+
+  scope = "${azurerm_storage_account.data_lake.id}/blobServices/default/containers/${each.value}"
+}
+
 resource "azurerm_key_vault" "main" {
   name                = var.key_vault_name
   location            = azurerm_resource_group.main.location
@@ -74,7 +78,6 @@ resource "azurerm_key_vault" "main" {
   }
 }
 
-# Armazenar a senha do SPN no Key Vault
 resource "azurerm_key_vault_secret" "spn_password" {
   name         = var.spn_display_name
   value        = azuread_service_principal_password.main.value

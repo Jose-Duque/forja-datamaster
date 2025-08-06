@@ -20,7 +20,6 @@ resource "azurerm_databricks_access_connector" "main" {
   }
 }
 
-# Atribui permissão para o Access Connector acessar o Storage
 resource "azurerm_role_assignment" "connector_blob_contrib" {
   scope                = azurerm_storage_account.data_lake.id
   role_definition_name = "Storage Blob Data Contributor"
@@ -46,6 +45,12 @@ resource "databricks_secret" "publishing_api" {
   key          = "publishing_api"
   string_value = azurerm_key_vault_secret.spn_password.value
   scope        = databricks_secret_scope.app.id
+}
+
+resource "databricks_secret_acl" "spn_read_secret" {
+  scope      = databricks_secret_scope.app.name
+  principal  = azuread_application.main.client_id
+  permission = "READ"
 }
 
 resource "databricks_cluster_policy" "uc_policy" {
@@ -84,26 +89,13 @@ resource "databricks_cluster_policy" "uc_policy" {
   depends_on = [azurerm_databricks_workspace.main]
 }
 
-resource "databricks_cluster" "main" {
-  cluster_name            = var.cluster_name
-  spark_version           = "13.3.x-scala2.12"
-  node_type_id            = "Standard_F4"
-  autotermination_minutes = 10
-  num_workers             = 1
+resource "databricks_permissions" "uc_policy_can_use" {
+  cluster_policy_id = databricks_cluster_policy.uc_policy.id
 
-  policy_id = databricks_cluster_policy.uc_policy.id
-  spark_conf = {
-    "fs.azure.account.auth.type.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = "OAuth"
-    "fs.azure.account.oauth.provider.type.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider"
-    "fs.azure.account.oauth2.client.id.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = azuread_application.main.client_id
-    "fs.azure.account.oauth2.client.secret.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = "{{secrets/${databricks_secret_scope.app.name}/${databricks_secret.publishing_api.key}}}"
-    "fs.azure.account.oauth2.client.endpoint.${azurerm_storage_account.data_lake.name}.dfs.core.windows.net" = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}/oauth2/token"
-    }
-  custom_tags = {
-    Environment = var.environment
+  access_control {
+    service_principal_name = azuread_application.main.client_id
+    permission_level       = "CAN_USE"
   }
-
-  depends_on = [ databricks_cluster_policy.uc_policy ]
 }
 
 resource "databricks_notebook" "bronze_utils" {
@@ -142,6 +134,22 @@ resource "databricks_notebook" "gold_utils" {
   source   = "${path.module}/notebooks/gold/utils/commons.py"
 }
 
+resource "databricks_permissions" "bronze_main_run" {
+  notebook_path = databricks_notebook.bronze_main.path
+  access_control {
+    service_principal_name = azuread_application.main.client_id
+    permission_level       = "CAN_MANAGE"
+  }
+}
+
+resource "databricks_permissions" "bronze_utils_run" {
+  notebook_path = databricks_notebook.bronze_utils.path
+  access_control {
+    service_principal_name = azuread_application.main.client_id
+    permission_level       = "CAN_MANAGE"
+  }
+}
+
 resource "databricks_token" "my_automation_token" {
   comment = "Token para automação"
   lifetime_seconds = 2592000
@@ -151,7 +159,6 @@ locals {
   medallion_layers = ["bronze", "silver", "gold"]
 }
 
-# 3. Credencial de Armazenamento para acessar o Data Lake via Unity Catalog
 resource "databricks_storage_credential" "uc_credential" {
   name = "uc-storage-credential-azure"
   azure_managed_identity {
@@ -163,7 +170,6 @@ resource "databricks_storage_credential" "uc_credential" {
   depends_on = [ azurerm_role_assignment.connector_blob_contrib ]
 }
 
-# 4. Localizações Externas para cada camada (bronze, silver, gold)
 resource "databricks_external_location" "medallion_locations" {
   for_each         = toset(local.medallion_layers)
   name             = "${each.key}-external-location"
@@ -173,7 +179,6 @@ resource "databricks_external_location" "medallion_locations" {
   owner            = var.databricks_user
 }
 
-# 6. Schemas (Databases) para as camadas bronze, silver e gold
 resource "databricks_schema" "medallion_schemas" {
   for_each      = toset(local.medallion_layers)
   catalog_name  = var.databricks_workspace
@@ -182,15 +187,12 @@ resource "databricks_schema" "medallion_schemas" {
   owner         = var.databricks_user
 }
 
-# 7. Permissões (Grants) para o grupo de analistas
 resource "databricks_grants" "analysts_usage" {
-  # Permissão para usar o catálogo
   grant {
     principal  = var.databricks_user
     privileges = ["ALL PRIVILEGES"]
   }
 
-  # Permissões para usar os schemas e criar tabelas neles
   for_each = databricks_schema.medallion_schemas
   grant {
     principal  = azuread_application.main.client_id
@@ -198,4 +200,35 @@ resource "databricks_grants" "analysts_usage" {
   }
 
   catalog = var.databricks_workspace
+}
+
+resource "databricks_grants" "spn_extloc_read" {
+  for_each = databricks_external_location.medallion_locations
+
+  external_location = each.value.name
+
+  grant {
+    principal  = azuread_application.main.client_id
+    privileges = ["READ_FILES"]
+  }
+}
+
+# === Grants no catálogo ===
+resource "databricks_grants" "spn_catalog_use" {
+  catalog = var.databricks_workspace
+  grant {
+    principal  = azuread_application.main.client_id
+    privileges = ["ALL PRIVILEGES"]
+  }
+}
+
+# === Grants nos schemas (USE_SCHEMA + SELECT) ===
+resource "databricks_grants" "spn_schema_use" {
+  for_each = databricks_schema.medallion_schemas
+
+  schema = each.value.id
+  grant {
+    principal  = azuread_application.main.client_id
+    privileges = ["ALL PRIVILEGES"]
+  }
 }

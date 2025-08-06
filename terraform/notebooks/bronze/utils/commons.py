@@ -7,6 +7,7 @@ from pyspark.sql.types import StringType
 from pyspark.sql.utils import AnalysisException
 from pyspark.dbutils import DBUtils
 from cryptography.fernet import Fernet
+from typing import Optional
 import datetime
 from pytz import timezone
 from typing import List
@@ -18,6 +19,7 @@ class Commons:
     self.path = f"abfss://{container}@{storage}.dfs.core.windows.net/{table_name}/"
     # self.path = self.dbutils.fs.ls(f"/Volumes/workspace/{container}/{table_name}")[0].path
     self.schema = schema
+    self.storage = storage
     self.table_name = table_name
 
   def logging(self, func, log_line):
@@ -30,7 +32,7 @@ class Commons:
         self.dbutils.fs.ls(self.path)
         return True
       except Exception as e:
-        raise ValueError(f"Path ou storage não encontrado / Verificar permissão: {e}")
+        raise ValueError(f"Path or storage not found / Check permission: {e}")
 
   def load_data(self, type: str) -> DataFrame:
     try:
@@ -99,16 +101,37 @@ class Commons:
     except Exception as e:
       raise ValueError(self.logging(self.encrypt_multiple_columns, f"Error encrypting columns: {e}"))
         
-  def save_to_table(self, dataframe: DataFrame) -> any:
+  def save_to_table(
+    self,
+    dataframe: DataFrame,
+    modo: str = "overwrite",
+    coluna_particao: Optional[str] = "dt_ingest",
+    external: bool = False
+    ) -> None:
+    
+    tabela_fqn = f"datamasterbr.bronze.{self.table_name}"
     try:
-      print(self.logging(self.save_to_table, "Saving to table"))
-      dataframe.write.format("delta") \
-        .partitionBy("dt_ingest") \
-        .mode("overwrite") \
-        .option("mergeSchema", "true") \
-        .saveAsTable(f"datamasterbr.bronze.{self.table_name}")
+        print(self.logging(self.save_to_table,(
+                    f"Saving DataFrame to {tabela_fqn} "
+                    f"(Modo: {modo}, External: {external}, "
+                    f"Partititons: {coluna_particao is not None})."),))
+        writer = (dataframe.write.format("delta").mode(modo).option("mergeSchema", "true"))
 
+        if coluna_particao:
+            writer = writer.partitionBy(coluna_particao)
+            print(self.logging(self.save_to_table, f"Partitioning by column: {coluna_particao}"))
 
-      print(self.logging(self.save_to_table, "Table saved"))
+        if external:
+            writer = writer.option("path", f"abfss://bronze@{self.storage}.dfs.core.windows.net/{self.table_name}/")
+            print(
+              self.logging(self.save_to_table, 
+              f"Saving as EXTERNAL Delta table in: abfss://bronze@{self.storage}.dfs.core.windows.net/{self.table_name}/")
+            )
+        else:
+            print(self.logging(self.save_to_table, "Saving as a MANAGED Delta Table"))
+
+        writer.saveAsTable(tabela_fqn)
+        print(self.logging(self.save_to_table, f"Table {tabela_fqn} saved successfully"))
+
     except Exception as e:
-      raise ValueError(self.logging(self.save_to_table, f"Error saving to table: {e}"))
+        raise ValueError(self.logging(self.save_to_table, f"Error saving table {tabela_fqn}: {e}"))
