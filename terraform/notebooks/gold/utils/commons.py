@@ -13,7 +13,7 @@ class GoldTableProcessor:
 
     def _load_silver_table(self):
         try:
-            return self.spark.table(f"silver.{self.silver_table_name}")
+            return self.spark.table(f"datamasterbr.silver.{self.silver_table_name}")
         except Exception as e:
             raise Exception(f"Erro ao carregar tabela Silver '{self.silver_table_name}': {e}")
 
@@ -56,7 +56,7 @@ class GoldTableProcessor:
         alias_other: str = "b"
     ):
         try:
-            df_other = self.spark.table(f"silver.{other_table}")
+            df_other = self.spark.table(f"datamasterbr.silver.{other_table}")
 
             # Renomear colunas duplicadas que não fazem parte do join
             conflicting_cols = [col for col in df_other.columns if col in self.df.columns and col not in join_condition]
@@ -107,7 +107,7 @@ class GoldTableProcessor:
             writer = self.df.write.format("delta").mode("overwrite")
             if partition_by:
                 writer = writer.partitionBy(*partition_by)
-            writer.option("mergeSchema", "true").saveAsTable(f"gold.{gold_table_name}")
+            writer.option("mergeSchema", "true").saveAsTable(f"datamasterbr.gold.{gold_table_name}")
             print(f"Tabela Delta Gold salva com sucesso: gold.{gold_table_name}")
         except Exception as e:
             raise Exception(f"Erro ao salvar tabela Gold: {e}")

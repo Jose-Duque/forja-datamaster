@@ -17,7 +17,6 @@ partition_column = dbutils.widgets.get("partition_column")
 
 # COMMAND ----------
 try:
-    spark.sql(f"CREATE SCHEMA IF NOT EXISTS silver")
     handler = SilverTableHandler(table, storage)
 
     print(f"Executando ação: {action}")

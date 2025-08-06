@@ -16,10 +16,9 @@ encrypt_columns = dbutils.widgets.get('encrypt_columns').split(",") if dbutils.w
 
 # COMMAND ----------
 try:
-    print("Initializing process")
+    print("Inicializando o processo")
     
     # schema = StructType.fromJson(json.loads(schema.replace("'", '"')))
-    spark.sql(f"CREATE SCHEMA IF NOT EXISTS bronze")
     
     base = Commons(storage.strip(), container.strip(), table_name.strip(), schema)
     
@@ -32,6 +31,6 @@ try:
         
         base.save_to_table(df)
     else:
-        raise ValueError("Path or storage not found")
+        raise ValueError("Path ou storage não encontrado")
 except Exception as e:
-    raise ValueError(f"Error: {e}")
+    raise ValueError(f"Error no processo: {e}")
