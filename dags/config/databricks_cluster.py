@@ -1,6 +1,6 @@
 from dags.utils.terraform_outputs import TerraformOutputManager
 
-def build_job_cluster_spec(datalake_name, spn_client_id, tenant_id, secret_scope, secret_key):
+def build_job_cluster_spec(datalake_name, spn_client_id, tenant_id, secret_scope, secret_key, databricks_access_connector):
     return [
         {
             "job_cluster_key": "cluster-data-analytics",
@@ -8,6 +8,13 @@ def build_job_cluster_spec(datalake_name, spn_client_id, tenant_id, secret_scope
                 "spark_version": "13.3.x-scala2.12",
                 "node_type_id": "Standard_DS3_v2",
                 "num_workers": 1,
+                "azure_attributes": {
+                    "first_on_demand_worker": 1,
+                    "availability": "ON_DEMAND_AZURE",
+                    "azure_managed_identity": {
+                        "client_id": databricks_access_connector
+                    }
+                },
                 "spark_conf": {
                     f"fs.azure.account.auth.type.{datalake_name}.dfs.core.windows.net": "OAuth",
                     f"fs.azure.account.oauth.provider.type.{datalake_name}.dfs.core.windows.net": "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider",

@@ -46,6 +46,7 @@ SPN_CLIENT_ID="$(terraform output -raw service_principal_client_id)"
 TENANT_ID="$(terraform output -raw service_principal_tenant_id)"
 SECRET_SCOPE="$(terraform output -raw databricks_secret_scope)"
 SECRET_KEY="$(terraform output -raw databricks_secret)"
+ACCESS_CONNECTOR="$(terraform output -raw databricks_access_connector)"
 EOF
 
 cd ..

@@ -26,6 +26,7 @@ spn_client_id = config["SPN_CLIENT_ID"]
 tenant_id = config["TENANT_ID"]
 secret_scope = config["SECRET_SCOPE"]
 secret_key = config["SECRET_KEY"]
+databricks_access_connector = config["ACCESS_CONNECTOR"]
 db_config = config["DB_CONFIG"]
 azure_config = config["AZURE_CONFIG"]
 default_args = config["DEFAULT_ARGS"]
@@ -35,7 +36,8 @@ job_cluster_spec = build_job_cluster_spec(
     spn_client_id=spn_client_id,
     tenant_id=tenant_id,
     secret_scope=secret_scope,
-    secret_key=secret_key
+    secret_key=secret_key,
+    databricks_access_connector=databricks_access_connector
 )
 
 @dag(
@@ -88,7 +90,6 @@ def extract_load_transform():
             databricks_conn_id=DATABRICKS_CONN_ID,
             notebook_path=TerraformOutputManager().get_output("path_notebooks_bronze"),
             source="WORKSPACE",
-            # job_cluster_key=TerraformOutputManager().get_output("cluster_key"),
             job_cluster_key="cluster-data-analytics",
             notebook_params={
                 "storage": TerraformOutputManager().get_output("storage_account_name"),
@@ -96,6 +97,7 @@ def extract_load_transform():
                 "table_name": "clientes",
                 "schema": "",
                 "encrypt_columns": "cpf_cnpj",
+                "external": True
             }
         )
 
@@ -111,6 +113,7 @@ def extract_load_transform():
                 "table_name": "vendedores",
                 "schema": "",
                 "encrypt_columns": "",
+                "external": True
             }
         )
 
@@ -126,6 +129,7 @@ def extract_load_transform():
                 "table_name": "vendas",
                 "schema": "",
                 "encrypt_columns": "",
+                "external": True
             }
         )
 
@@ -146,7 +150,7 @@ def extract_load_transform():
                     "new_name":"nome_cliente",
                     "columns":"",
                     "query":"",
-                    "external":False,
+                    "external":True,
                     "mode":"overwrite",
                     "partition_column":"dt_ingest"
                 }
@@ -185,8 +189,6 @@ def extract_load_transform():
             job_cluster_key="cluster-data-analytics",
             notebook_params={
                 "silver_table": "clientes",
-                "catalog": f"""
-                            {TerraformOutputManager().get_output('databricks_workspace_name')}_{TerraformOutputManager().get_output('databricks_workspace_id')}""",
                 "gold_table": "analise_vendas_clientes",
                 "action": "query",
                 "group_by": "",
@@ -204,8 +206,8 @@ def extract_load_transform():
                             c.endereco,
                             c.id_concessionarias,
                             COUNT(v.id_vendas) AS qtd_vendas,
-                            SUM(v.valor_pago) AS valor_total_gasto,
-                            AVG(v.valor_pago) AS ticket_medio,
+                            SUM(CAST(v.valor_pago AS DOUBLE)) AS valor_total_gasto,
+                            AVG(CAST(v.valor_pago AS DOUBLE)) AS ticket_medio,
                             MIN(v.data_venda) AS primeira_compra,
                             MAX(v.data_venda) AS ultima_compra,
                             COUNT(DISTINCT v.id_vendedores) AS qtd_vendedores_diferentes
@@ -226,13 +228,13 @@ def extract_load_transform():
 
         [raw_to_bronze_clientes,raw_to_bronze_vendedores,raw_to_bronze_vendas] >> transform_group_silver() >> gold_analytics
 
-    # with TaskGroup("delete_file_container") as delete_file_from_container:
-    #     for table_name in TABLE_NAMES:
-    #         PythonOperator(
-    #             task_id=f"delete_file_{table_name}_container",
-    #             python_callable=DatabaseToAzureBlobPipeline(db_config, azure_config).delete_blobs_inside_folder,
-    #             op_args=[f"{table_name}/"]
-    #         )
+    with TaskGroup("delete_file_container") as delete_file_from_container:
+        for table_name in TABLE_NAMES:
+            PythonOperator(
+                task_id=f"delete_file_{table_name}_container",
+                python_callable=DatabaseToAzureBlobPipeline(db_config, azure_config).delete_blobs_inside_folder,
+                op_args=[f"{table_name}/"]
+            )
 
     finish = EmptyOperator(task_id="finish")
     chain(
@@ -241,7 +243,7 @@ def extract_load_transform():
         # insert_table_postgres,
         # ingestion_file_datalake,
         workflow,
-        # delete_file_from_container,
+        delete_file_from_container,
         finish
     )
 dag = extract_load_transform()

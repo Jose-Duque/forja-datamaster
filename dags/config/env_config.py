@@ -13,6 +13,7 @@ def get_env_config():
         "TENANT_ID": os.getenv("TENANT_ID"),
         "SECRET_SCOPE": os.getenv("SECRET_SCOPE"),
         "SECRET_KEY": os.getenv("SECRET_KEY"),
+        "ACCESS_CONNECTOR": os.getenv("ACCESS_CONNECTOR"),
         "DB_CONFIG": {
             "dbname": os.getenv("DB_NAME"),
             "user": os.getenv("DB_USER"),

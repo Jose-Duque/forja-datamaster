@@ -20,15 +20,13 @@ config = {
                 "conn_type": "databricks",
                 "conn_host": manager_output.get_output(key="databricks_workspace_url"),
                 "conn_schema": "",
-                "conn_login": "",
-                "conn_password": manager_output.get_output(key="databricks_token_value"),
+                "conn_login": manager_output.get_output(key="service_principal_client_id"),
+                "conn_password": manager_output.get_output(key="service_principal_password"),
                 "conn_port": "",
                 "conn_extra":
                             {
-                            "appId": manager_output.get_output(key="service_principal_client_id"),
-                            "password": manager_output.get_output(key="service_principal_password"),
-                            "tenant": manager_output.get_output(key="service_principal_tenant_id"),
-                            "displayName": manager_output.get_output(key="service_principal_name")
+                            "login_type": "azure_service_principal",
+                            "azure_tenant_id": manager_output.get_output(key="service_principal_tenant_id")
                             }
             },
         ],
