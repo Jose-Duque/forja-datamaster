@@ -30,12 +30,10 @@
 5. [Orquestração e Monitoramento (Airflow)](#orquestração-e-monitoramento-airflow)
 6. [Transformações (Databricks)](#transformações-databricks)
 7. [Governança e Segurança (Unity Catalog)](#governança-e-segurança-unity-catalog)
-8. [Execução do Projeto (Passo a Passo)](#execução-do-projeto-passo-a-passo)
-9. [Estrutura de Repositório](#estrutura-de-repositório)
-10. [Operação & Custos](#operação--custos)
-11. [Troubleshooting](#troubleshooting)
-12. [Critérios de Pronto (DoD)](#critérios-de-pronto-dod)
-13. [Melhorias Futuras](#melhorias-futuras)
+9. [Operação & Custos](#operação--custos)
+10. [Troubleshooting](#troubleshooting)
+11. [Critérios de Pronto (DoD)](#critérios-de-pronto-dod)
+12. [Melhorias Futuras](#melhorias-futuras)
 
 ---
 
