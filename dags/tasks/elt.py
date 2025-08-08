@@ -52,31 +52,31 @@ job_cluster_spec = build_job_cluster_spec(
 def extract_load_transform():
     init = EmptyOperator(task_id="init")
 
-    # with TaskGroup("create_table") as create_table_postgres:
-    #     for table_name in TABLE_NAMES:
-    #         PostgresOperator(
-    #             task_id=f"create_table_{table_name}",
-    #             postgres_conn_id=POSTGRES_CONN_ID,
-    #             sql=Ddl(table_name).create_table(),
-    #             autocommit=False
-    #         )
+    with TaskGroup("create_table") as create_table_postgres:
+        for table_name in TABLE_NAMES:
+            PostgresOperator(
+                task_id=f"create_table_{table_name}",
+                postgres_conn_id=POSTGRES_CONN_ID,
+                sql=Ddl(table_name).create_table(),
+                autocommit=False
+            )
     
-    # with TaskGroup("insert_table") as insert_table_postgres:
-    #     for table_name in TABLE_NAMES:
-    #         PostgresOperator(
-    #             task_id=f"insert_tabela_{table_name}",
-    #             postgres_conn_id=POSTGRES_CONN_ID,
-    #             sql=Dml(table_name).insert_table(),
-    #             autocommit=False
-    #         )
+    with TaskGroup("insert_table") as insert_table_postgres:
+        for table_name in TABLE_NAMES:
+            PostgresOperator(
+                task_id=f"insert_tabela_{table_name}",
+                postgres_conn_id=POSTGRES_CONN_ID,
+                sql=Dml(table_name).insert_table(),
+                autocommit=False
+            )
     
-    # with TaskGroup("ingestion_to_datalake") as ingestion_file_datalake:
-    #     for table_name in TABLE_NAMES:
-    #         PythonOperator(
-    #             task_id=f"ingestion_{table_name}_to_datalake",
-    #             python_callable=DatabaseToAzureBlobPipeline(db_config, azure_config).run_pipeline,
-    #             op_args=[table_name]
-    #         )
+    with TaskGroup("ingestion_to_datalake") as ingestion_file_datalake:
+        for table_name in TABLE_NAMES:
+            PythonOperator(
+                task_id=f"ingestion_{table_name}_to_datalake",
+                python_callable=DatabaseToAzureBlobPipeline(db_config, azure_config).run_pipeline,
+                op_args=[table_name]
+            )
 
     with DatabricksWorkflowTaskGroup(
         group_id="databricks_workflow",
@@ -239,9 +239,9 @@ def extract_load_transform():
     finish = EmptyOperator(task_id="finish")
     chain(
         init,
-        # create_table_postgres,
-        # insert_table_postgres,
-        # ingestion_file_datalake,
+        create_table_postgres,
+        insert_table_postgres,
+        ingestion_file_datalake,
         workflow,
         delete_file_from_container,
         finish
