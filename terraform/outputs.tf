@@ -70,6 +70,11 @@ output "databricks_secret" {
   value = databricks_secret.publishing_api.key
 }
 
+output "databricks_access_connector" {
+  description = "Autenticar Job Cluster"
+  value = azurerm_databricks_access_connector.main.identity[0].principal_id
+}
+
 output "cluster_policy" {
   description = "Id do Cluster Policy"
   value = databricks_cluster_policy.uc_policy.id

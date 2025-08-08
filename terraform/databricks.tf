@@ -150,13 +150,45 @@ resource "databricks_permissions" "bronze_utils_run" {
   }
 }
 
+resource "databricks_permissions" "silver_main_run" {
+  notebook_path = databricks_notebook.silver_main.path
+  access_control {
+    service_principal_name = azuread_application.main.client_id
+    permission_level       = "CAN_MANAGE"
+  }
+}
+
+resource "databricks_permissions" "silver_utils_run" {
+  notebook_path = databricks_notebook.silver_utils.path
+  access_control {
+    service_principal_name = azuread_application.main.client_id
+    permission_level       = "CAN_MANAGE"
+  }
+}
+
+resource "databricks_permissions" "gold_main_run" {
+  notebook_path = databricks_notebook.gold_main.path
+  access_control {
+    service_principal_name = azuread_application.main.client_id
+    permission_level       = "CAN_MANAGE"
+  }
+}
+
+resource "databricks_permissions" "gold_utils_run" {
+  notebook_path = databricks_notebook.gold_utils.path
+  access_control {
+    service_principal_name = azuread_application.main.client_id
+    permission_level       = "CAN_MANAGE"
+  }
+}
+
 resource "databricks_token" "my_automation_token" {
   comment = "Token para automação"
   lifetime_seconds = 2592000
 }
 
 locals {
-  medallion_layers = ["bronze", "silver", "gold"]
+  medallion_layers = ["raw", "bronze", "silver", "gold"]
 }
 
 resource "databricks_storage_credential" "uc_credential" {
@@ -209,7 +241,7 @@ resource "databricks_grants" "spn_extloc_read" {
 
   grant {
     principal  = azuread_application.main.client_id
-    privileges = ["READ_FILES"]
+    privileges = ["ALL PRIVILEGES"]
   }
 }
 

@@ -1,7 +1,7 @@
 project_name                    = "datamaster"
 prefix                          = "mydatalake"
 resource_group_name             = "rg-br-datamaster"
-location                        = "brazilsouth"
+location                        = "East US"
 environment                     = "analytics"
 storage_account_name            = "stgbrdatalake"
 key_vault_name                  = "kvsecretsdb"
