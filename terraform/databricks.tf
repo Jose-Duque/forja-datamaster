@@ -1,3 +1,4 @@
+# Cria o workspace Databricks na Azure
 resource "azurerm_databricks_workspace" "main" {
   name                = var.databricks_workspace
   resource_group_name = azurerm_resource_group.main.name
@@ -5,12 +6,14 @@ resource "azurerm_databricks_workspace" "main" {
   sku                 = "premium"
 }
 
+# Concede ao SPN a função de Contributor no workspace Databricks
 resource "azurerm_role_assignment" "spn_databricks_contributor" {
   principal_id         = azuread_service_principal.main.object_id
   role_definition_name = "Contributor"
   scope                = azurerm_databricks_workspace.main.id
 }
 
+# Cria o Access Connector para autenticação gerenciada no Unity Catalog
 resource "azurerm_databricks_access_connector" "main" {
   name                = "ac-${var.prefix}-${var.environment}"
   resource_group_name = azurerm_resource_group.main.name
@@ -20,177 +23,79 @@ resource "azurerm_databricks_access_connector" "main" {
   }
 }
 
+# Concede ao Access Connector permissão de acesso ao Data Lake
 resource "azurerm_role_assignment" "connector_blob_contrib" {
   scope                = azurerm_storage_account.data_lake.id
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = azurerm_databricks_access_connector.main.identity[0].principal_id
 }
 
+# Cria o Service Principal dentro do Databricks
 resource "databricks_service_principal" "main" {
-  display_name = azuread_application.main.display_name
-  application_id = azuread_application.main.client_id
-
+  display_name             = azuread_application.main.display_name
+  application_id           = azuread_application.main.client_id
   allow_cluster_create      = true
   databricks_sql_access     = true
   allow_instance_pool_create = true
-
-  depends_on = [azurerm_databricks_workspace.main]
+  depends_on               = [azurerm_databricks_workspace.main]
 }
 
+# Cria um Secret Scope no Databricks
 resource "databricks_secret_scope" "app" {
   name = "application-secret-scope"
 }
 
+# Cria um segredo no Databricks usando senha do SPN
 resource "databricks_secret" "publishing_api" {
   key          = "publishing_api"
   string_value = azurerm_key_vault_secret.spn_password.value
   scope        = databricks_secret_scope.app.id
 }
 
+# Concede ao SPN permissão para ler o segredo
 resource "databricks_secret_acl" "spn_read_secret" {
   scope      = databricks_secret_scope.app.name
   principal  = azuread_application.main.client_id
   permission = "READ"
 }
 
+# Cria grupo de usuários no Databricks
+resource "databricks_group" "data_analysts_group" {
+  display_name             = "data-analysts-group"
+  allow_cluster_create     = true
+  allow_instance_pool_create = true
+  databricks_sql_access    = true
+  workspace_access         = true
+}
+
+# Define política de cluster para uso com Unity Catalog
 resource "databricks_cluster_policy" "uc_policy" {
   name = "unity-catalog-policy"
-
-  definition = jsonencode(
-    {
-      "data_security_mode": {
-        "type": "fixed",
-        "value": "USER_ISOLATION"
-      },
-      "spark_version": {
-        "type": "fixed",
-        "value": "13.3.x-scala2.12"
-      },
-      "node_type_id": {
-        "type": "allowlist",
-        "values": [
-          "Standard_DS3_v2",
-          "Standard_DS4_v2",
-          "Standard_F4"
-        ]
-      },
-      "num_workers": {
-        "type": "range",
-        "minValue": 1,
-        "maxValue": 5
-      },
-      "autotermination_minutes": {
-        "type": "range",
-        "minValue": 10,
-        "maxValue": 30
-      }
-    }
-  )
+  definition = jsonencode({
+    data_security_mode       = { type = "fixed", value = "USER_ISOLATION" }
+    spark_version            = { type = "fixed", value = "13.3.x-scala2.12" }
+    node_type_id              = { type = "allowlist", values = ["Standard_DS3_v2", "Standard_DS4_v2", "Standard_F4"] }
+    num_workers               = { type = "range", minValue = 1, maxValue = 5 }
+    autotermination_minutes   = { type = "range", minValue = 10, maxValue = 30 }
+  })
   depends_on = [azurerm_databricks_workspace.main]
 }
 
+# Concede ao SPN permissão para usar a política de cluster
 resource "databricks_permissions" "uc_policy_can_use" {
   cluster_policy_id = databricks_cluster_policy.uc_policy.id
-
   access_control {
     service_principal_name = azuread_application.main.client_id
     permission_level       = "CAN_USE"
   }
 }
 
-resource "databricks_notebook" "bronze_utils" {
-  path     = "/Workspace/Users/${var.databricks_user}/bronze/utils/commons.py"
-  language = "PYTHON"
-  source   = "${path.module}/notebooks/bronze/utils/commons.py"
-}
-
-resource "databricks_notebook" "bronze_main" {
-  path     = "/Workspace/Users/${var.databricks_user}/bronze/main"
-  language = "PYTHON"
-  source   = "${path.module}/notebooks/bronze/main.py"
-}
-
-resource "databricks_notebook" "silver_main" {
-  path     = "/Workspace/Users/${var.databricks_user}/silver/main"
-  language = "PYTHON"
-  source   = "${path.module}/notebooks/silver/main.py"
-}
-
-resource "databricks_notebook" "silver_utils" {
-  path     = "/Workspace/Users/${var.databricks_user}/silver/utils/commons.py"
-  language = "PYTHON"
-  source   = "${path.module}/notebooks/silver/utils/commons.py"
-}
-
-resource "databricks_notebook" "gold_main" {
-  path     = "/Workspace/Users/${var.databricks_user}/gold/main"
-  language = "PYTHON"
-  source   = "${path.module}/notebooks/gold/main.py"
-}
-
-resource "databricks_notebook" "gold_utils" {
-  path     = "/Workspace/Users/${var.databricks_user}/gold/utils/commons.py"
-  language = "PYTHON"
-  source   = "${path.module}/notebooks/gold/utils/commons.py"
-}
-
-resource "databricks_permissions" "bronze_main_run" {
-  notebook_path = databricks_notebook.bronze_main.path
-  access_control {
-    service_principal_name = azuread_application.main.client_id
-    permission_level       = "CAN_MANAGE"
-  }
-}
-
-resource "databricks_permissions" "bronze_utils_run" {
-  notebook_path = databricks_notebook.bronze_utils.path
-  access_control {
-    service_principal_name = azuread_application.main.client_id
-    permission_level       = "CAN_MANAGE"
-  }
-}
-
-resource "databricks_permissions" "silver_main_run" {
-  notebook_path = databricks_notebook.silver_main.path
-  access_control {
-    service_principal_name = azuread_application.main.client_id
-    permission_level       = "CAN_MANAGE"
-  }
-}
-
-resource "databricks_permissions" "silver_utils_run" {
-  notebook_path = databricks_notebook.silver_utils.path
-  access_control {
-    service_principal_name = azuread_application.main.client_id
-    permission_level       = "CAN_MANAGE"
-  }
-}
-
-resource "databricks_permissions" "gold_main_run" {
-  notebook_path = databricks_notebook.gold_main.path
-  access_control {
-    service_principal_name = azuread_application.main.client_id
-    permission_level       = "CAN_MANAGE"
-  }
-}
-
-resource "databricks_permissions" "gold_utils_run" {
-  notebook_path = databricks_notebook.gold_utils.path
-  access_control {
-    service_principal_name = azuread_application.main.client_id
-    permission_level       = "CAN_MANAGE"
-  }
-}
-
-resource "databricks_token" "my_automation_token" {
-  comment = "Token para automação"
-  lifetime_seconds = 2592000
-}
-
+# Lista das camadas da arquitetura Medallion
 locals {
   medallion_layers = ["raw", "bronze", "silver", "gold"]
 }
 
+# Cria credencial de armazenamento para Unity Catalog usando o Access Connector
 resource "databricks_storage_credential" "uc_credential" {
   name = "uc-storage-credential-azure"
   azure_managed_identity {
@@ -198,10 +103,10 @@ resource "databricks_storage_credential" "uc_credential" {
   }
   comment = "Credencial para acesso ao Data Lake pelo Unity Catalog"
   owner   = var.databricks_user
-
-  depends_on = [ azurerm_role_assignment.connector_blob_contrib ]
+  depends_on = [azurerm_role_assignment.connector_blob_contrib]
 }
 
+# Cria External Locations para cada camada do Data Lake
 resource "databricks_external_location" "medallion_locations" {
   for_each         = toset(local.medallion_layers)
   name             = "${each.key}-external-location"
@@ -211,56 +116,11 @@ resource "databricks_external_location" "medallion_locations" {
   owner            = var.databricks_user
 }
 
+# Cria Schemas no Unity Catalog para cada camada do Data Lake
 resource "databricks_schema" "medallion_schemas" {
   for_each      = toset(local.medallion_layers)
   catalog_name  = var.databricks_workspace
   name          = each.key
   comment       = "Schema para a camada ${each.key}."
   owner         = var.databricks_user
-}
-
-resource "databricks_grants" "analysts_usage" {
-  grant {
-    principal  = var.databricks_user
-    privileges = ["ALL PRIVILEGES"]
-  }
-
-  for_each = databricks_schema.medallion_schemas
-  grant {
-    principal  = azuread_application.main.client_id
-    privileges = ["ALL PRIVILEGES"]
-  }
-
-  catalog = var.databricks_workspace
-}
-
-resource "databricks_grants" "spn_extloc_read" {
-  for_each = databricks_external_location.medallion_locations
-
-  external_location = each.value.name
-
-  grant {
-    principal  = azuread_application.main.client_id
-    privileges = ["ALL PRIVILEGES"]
-  }
-}
-
-# === Grants no catálogo ===
-resource "databricks_grants" "spn_catalog_use" {
-  catalog = var.databricks_workspace
-  grant {
-    principal  = azuread_application.main.client_id
-    privileges = ["ALL PRIVILEGES"]
-  }
-}
-
-# === Grants nos schemas (USE_SCHEMA + SELECT) ===
-resource "databricks_grants" "spn_schema_use" {
-  for_each = databricks_schema.medallion_schemas
-
-  schema = each.value.id
-  grant {
-    principal  = azuread_application.main.client_id
-    privileges = ["ALL PRIVILEGES"]
-  }
 }

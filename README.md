@@ -1,5 +1,10 @@
-# ⚒️ Data Master — Forja
-![Arquitetura](docs/arquitetura.png)
+# Forja — Data Master
+<p align="center">
+  <img src="assets/img/forja.png" width="100" alt="log do projeto">
+</p>
+
+O repositório "**forja-datamaster**" é uma solução para o programa Data Master organizado pela F1rst Santander.
+Solução proposta e desenvolvida por [José Duque](https://www.linkedin.com/in/jos%C3%A9-duque-29a944100/).
 
 <p align="center">
   <img src="https://img.shields.io/badge/Terraform-844FBA?style=for-the-badge&logo=terraform&logoColor=white"/>
@@ -12,143 +17,223 @@
 
 ---
 
-## 📑 Sumário
-- [🎯 Objetivo do Case](#-objetivo-do-case)  
-- [🏗 Arquitetura da Solução](#-arquitetura-da-solução)  
-- [⚙️ Arquitetura Técnica](#️-arquitetura-técnica)  
-- [🛠 Provisionamento (Terraform)](#-provisionamento-terraform)  
-- [📡 Orquestração e Monitoramento (Airflow)](#-orquestração-e-monitoramento-airflow)  
-- [🧪 Transformações (Databricks)](#-transformações-databricks)  
-- [🔐 Governança e Segurança (Unity Catalog)](#-governança-e-segurança-unity-catalog)  
-- [💰 Operação & Custos](#-operação--custos)  
-- [🛠 Troubleshooting](#-troubleshooting)  
-- [✅ Critérios de Pronto (DoD)](#-critérios-de-pronto-dod)  
-- [🚀 Melhorias Futuras](#-melhorias-futuras)  
+## Sumário
+
+1. [Objetivo do Case](#objetivo-do-case)
+
+   * [Início Rápido](#início-rápido)
+2. [Arquitetura da Solução](#arquitetura-da-solução)
+
+   * [Visão Geral](#visão-geral)
+   * [Fluxo de Dados](#fluxo-de-dados)
+   * [Tecnologias Utilizadas](#tecnologias-utilizadas)
+3. [Arquitetura Técnica](#arquitetura-técnica)
+
+   * [Infraestrutura Provisionada](#infraestrutura-provisionada)
+   * [Criação e Inserção de Dados](#criação-e-inserção-de-dados)
+   * [Processamento](#processamento)
+   * [Provisionamento (Terraform)](#provisionamento-terraform)
+4. [Orquestração e Monitoramento (Airflow)](#orquestração-e-monitoramento-airflow)
+5. [Transformações (Databricks)](#transformações-databricks)
+6. [Governança e Segurança (Unity Catalog)](#governança-e-segurança-unity-catalog)
+7. [Operação & Custos](#operação--custos)
+8. [Troubleshooting](#troubleshooting)
+9. [Critérios de Pronto (DoD)](#critérios-de-pronto-dod)
+10. [Melhorias Futuras](#melhorias-futuras)
 
 ---
 
-## 🎯 Objetivo do Case
+## Objetivo do Case
 
-> Assim como uma **forja** transforma metal bruto em artefatos valiosos, este projeto transforma **dados brutos** em **ativos analíticos confiáveis e governados**, seguindo a arquitetura **Medallion** e boas práticas de **DataOps**.  
+Assim como uma **forja** transforma metal bruto em artefatos valiosos, este projeto transforma **dados brutos** em **ativos analíticos** governados e confiáveis. A proposta é implementar uma arquitetura completa de **extração → ingestão → transformação → entrega**, com rastreabilidade e segurança ponta a ponta.
 
----
+### Início Rápido
 
-## 🚀 Início Rápido
-Para executar localmente (provisionamento + orquestração):  
+**Executar o projeto (provisionamento + orquestração):**
 
 ```bash
 ./main/init.sh
 ```
-> 🛠 O script provisiona a infraestrutura com **Terraform** e inicia o **Airflow** via **Docker/Astronomer**.  
+[Como executar o projeto](./main/README.md)
+> **Obs.**: O script inicializa serviços e dependências automaticamente (Terraform, containers do Astronomer/Airflow etc.).
 
 ---
 
-## 🏗 Arquitetura da Solução
+## Arquitetura da Solução
 
 ### Visão Geral
-- **Armazenamento** → Azure Data Lake (ADLS Gen2)  
-- **Processamento** → Azure Databricks (Spark + Delta Lake)  
-- **Governança** → Unity Catalog (metastore, lineage, RBAC)  
-- **Orquestração** → Apache Airflow (Astronomer)  
-- **Infra como Código** → Terraform  
+
+A solução utiliza serviços da Azure para provisionar um ambiente completo de ingestão, processamento e disponibilização de dados analíticos com:
+
+* **Armazenamento** em **Azure Data Lake** estruturado no padrão **Medallion** (Raw → Bronze → Silver → Gold).
+* **Processamento** com **Azure Databricks** (Apache Spark + Delta Lake).
+* **Governança** com **Unity Catalog** (metastore, permissões e external locations).
+* **Orquestração e Monitoramento** com **Apache Airflow** (via **Astronomer**).
+* **Provisionamento** e reprodutibilidade via **Terraform**.
 
 ### Fluxo de Dados
-```mermaid
-flowchart LR
-    A[PostgreSQL] -->|Ingestão| B[Raw Layer]
-    B -->|Padronização| C[Bronze Layer]
-    C -->|Limpeza e Enriquecimento| D[Silver Layer]
-    D -->|Agregações e Marts| E[Gold Layer]
-    E -->|Consumo| F[BI / SQL / Notebooks]
-```
+
+1. **Ingestão**
+
+   * **Fonte**: PostgreSQL (exemplos com DDL/DML automáticos).
+   * **Destino**: Camada **Raw** no Data Lake.
+2. **Armazenamento em Camadas**
+
+   * **Bronze**: dados brutos padronizados.
+   * **Silver**: dados limpos, *dedup*, enriquecidos.
+   * **Gold**: dados prontos para consumo analítico (ex.: *marts*, **Smart Tables** quando aplicável).
+3. **Processamento**
+
+   * Notebooks/Jobs do Databricks orquestrados pelo Airflow.
+4. **Orquestração**
+
+   * DAGs **(Airflow)** com agendamentos, *retries* e logs centralizados.
+5. **Entrega**
+
+   * Tabelas Delta publicadas no **Unity Catalog** para acesso por BI/SQL/Notebooks.
+6. **Governança e Segurança**
+
+   * Acesso via Azure AD, segredos no Key Vault, lineage e auditoria no UC.
+
+### Tecnologias Utilizadas
+
+* **Azure**: Resource Groups, Storage (ADLS Gen2), Key Vault, Azure AD (SPN).
+* **Databricks**: Workspace, Jobs/Workflows, Cluster Policies, Unity Catalog.
+* **Airflow** (Astronomer), **PostgreSQL**, **Terraform**, **Docker**.
 
 ---
 
-## ⚙️ Arquitetura Técnica
+## Arquitetura Técnica
 
-| Componente | Função |
-|------------|--------|
-| **Resource Group** | Agrupamento lógico dos recursos Azure |
-| **Storage Account** | ADLS Gen2 com camadas Raw/Bronze/Silver/Gold |
-| **SPN + Key Vault** | Identidade e segredo para acesso seguro |
-| **Databricks Workspace** | Processamento e transformação |
-| **Unity Catalog** | Governança e segurança de dados |
-| **Airflow (Astronomer)** | Orquestração e monitoramento |
+### Infraestrutura Provisionada
 
----
+* **Resource Group** e **Storage Account** com containers: `raw`, `bronze`, `silver`, `gold`.
+* **App Registration (SPN)** com **credenciais no Key Vault**.
+* **Databricks Workspace** com **Cluster Policy** **Access Connector**.
+* **Unity Catalog**: storage credential, external locations, catálogo/esquemas e **grants**.
 
-## 🛠 Provisionamento (Terraform)
+### Criação e Inserção de Dados
 
-**Ordem recomendada**:  
-1️⃣ RG → 2️⃣ Storage + Containers → 3️⃣ Key Vault → 4️⃣ SPN → 5️⃣ Role Assignments → 6️⃣ Databricks → 7️⃣ Unity Catalog → 8️⃣ Clusters e Jobs  
+* **Classe DDL**: cria tabelas no PostgreSQL automaticamente.
+* **Classe DML**: insere dados a partir de arquivos **JSON**.
+* **Airflow Operator**: orquestra as operações de DDL/DML e a ingestão para o Data Lake.
 
-**Principais Providers**:  
-- `azurerm`  
-- `azuread`  
-- `databricks`  
+### Processamento
 
----
+* **ExtractDbSaveToAzure**: extrai do PostgreSQL e persiste no **Raw**.
+* **Pipeline Databricks**: **Raw → Bronze → Silver → Gold**, acionado por DAG no Airflow.
 
-## 📡 Orquestração (Airflow)
-
-- **DAG Principal**: `extract → bronze → silver → gold`  
-- **Operadores**: PythonOperator, DatabricksSubmitRunOperator  
-- **Boas Práticas**: retries, logs centralizados, parametrização dinâmica  
+### Provisionamento (Terraform)
+* Veja mais detalhes sobre a infraestrutura [aqui](./terraform/README.md)
 
 ---
 
-## 🧪 Transformações (Databricks)
+## Orquestração e Monitoramento (Airflow)
 
-| Camada | Ações |
-|--------|-------|
-| Bronze | Correção de tipos, persistência Delta |
-| Silver | Deduplicação, enriquecimento, joins |
-| Gold | Agregações, modelagem (dim/fact), otimização |
+* **DAGs** principais:
 
----
-
-## 🔐 Governança (Unity Catalog)
-
-- **Storage Credential** → SPN ou identidade gerenciada  
-- **External Locations** → raw/bronze/silver/gold  
-- **RBAC** → grants por camada e grupo  
-- **Lineage** → rastreabilidade completa  
+  * `extract_from_source` (PythonOperator) → grava em `raw/`.
+  * `ingest_control` (PythonOperator) → valida partições/headers e aciona Databricks.
+  * `bronze`, `silver`, `gold` (DatabricksWorkflowsTaskGroup ou DatabricksSubmitRunOperator).
+  * `cleanup` (PythonOperator) → remove temporários/antigos.
+* **Boas práticas**: `retries`, `retry_delay`, `max_active_runs`, parametrização por `{{ ds }}`.
+* **Conexões**: `DATABRICKS_HOST` + `POSTGRES_CONN` (Secret/Env). Com UC Volumes, preferir identidade gerenciada.
+* **Observabilidade**: [**Databricks** - **Airflow UI**] (logs, reexecução), métricas e alertas.
+* **Gráficos recomendados**: execuções por status, duração das tarefas, taxa sucesso/erro, *SLA misses*.
 
 ---
 
-## 💰 Custos
+## Transformações (Databricks)
 
-- Autotermination clusters: **10–15 min**  
-- VM types econômicos (Standard_F4, DS3_v2)  
-- Alertas de quota no Azure  
-
----
-
-## 🛠 Troubleshooting
-
-| Erro | Solução |
-|------|---------|
-| `INSUFFICIENT_PERMISSIONS` | Revisar grants no UC e roles no Storage |
-| `MANAGE no Storage Credential` | Conceder permissão MANAGE ao aplicador |
-| `Quota/VM indisponível` | Alterar `node_type_id` ou solicitar aumento |
+* **Bronze**: leitura bruta, correção de tipos, persistência Delta (`overwriteSchema=true` apenas aqui).
+* **Silver**: conformidade de chaves, regras de qualidade e *joins*.
+* **Gold**: agregações e modelagem.
+* **Naming**: `catalog.schema.tabela` (ex.: `main.bronze.clientes` → `main.gold.fato_vendas`).
 
 ---
 
-## ✅ Critérios de Pronto (DoD)
+## Governança e Segurança (Unity Catalog)
 
-✔ Infra provisionada sem drift  
-✔ UC configurado (credential, locations, grants)  
-✔ DAG executa ingestão + transformação  
-✔ Tabelas Delta acessíveis com segurança  
-✔ Custos sob controle  
+* **Storage Credential** com identidade gerenciada ou SPN.
+* **External Locations** para `raw/bronze/silver/gold` (`abfss://`).
+* **Catálogo/Esquemas**: isolar camadas e aplicar **grants** por grupo/perfil.
+* **Lineage/Auditoria**: use o UC para rastreabilidade e logs de acesso.
+
+---
+
+## Execução do Projeto
+
+* Pré-requisitos
+
+- [Azure CLI (`az`)](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
+- [Terraform](https://developer.hashicorp.com/terraform/install)
+- [Docker](https://www.docker.com/products/docker-desktop/)
+- [Astronomer CLI (`astro`)](https://docs.astronomer.io/astro/cli/install-cli)
+- [Python 3](https://www.python.org/downloads/)
+- [Git](https://git-scm.com/)
+
+### Validar e executar DAGs
+
+* **DAG** `extract-load-transform`: PostgreSQL → Raw → Bronze → Silver → Gold.
 
 ---
 
-## 🚀 Melhorias Futuras
+## Operação & Custos
 
-- Airflow em **Kubernetes** com autoscaling (KEDA)  
-- Ingestão **real-time** (Kafka/Event Hubs)  
-- CI/CD com GitHub Actions  
-- Observabilidade e Data Quality (Great Expectations)  
+* **Job clusters** com **autotermination** (10–15 min).
+* Allowlist de `node_type_id` e tamanhos econômicos.
+* Alertas de **quota** (cores/VM) e **falhas**.
 
 ---
+
+## Troubleshooting
+
+* **INSUFFICIENT\_PERMISSIONS / SELECT on any file**
+
+  * Verifique grants no **External Location** e roles do SPN no Storage.
+  * Garanta leitura via **UC** (tabelas) ou configs OAuth corretas.
+* **cannot read/create external location / MANAGE no Storage Credential**
+
+  * O aplicador precisa de `MANAGE` no credential e permissões no catálogo.
+* **Quota/VM não disponível**
+
+  * Ajuste `node_type_id` via policy ou solicite aumento de cores/região.
+* **Key Vault Secret já existe**
+
+  * Use `terraform import` com **ID versionado** do segredo.
+
+---
+
+## Critérios de Pronto (DoD)
+
+* Infra via Terraform aplicada sem *drift*.
+* UC configurado (credential, locations, catalog/schemas, grants).
+* DAG executa `extract → ingestion → raw → bronze → silver → gold → cleanup` com logs e *retries*.
+* Tabelas Delta acessíveis com permissões corretas.
+* Custos sob controle (autotermination e tamanhos aprovados).
+
+---
+
+## Melhorias Futuras
+
+* **Airflow em Kubernetes** (Helm Chart oficial, KubernetesExecutor/CeleryK8s, autoscaling com KEDA, Secrets/Configs no cluster e observabilidade nativa). Indicado para produção multiambiente e maior resiliência.
+* **Ingestão em tempo real** com Kafka/Event Hubs (streaming) complementando batch.
+* **Testes & CI/CD** com GitHub Actions para IaC e código.
+* **Alertas proativos** ampliar os mecanismos de tratamento de falhas e adicionar alertas proativos por e-mail ou Slack via Airflow para melhorar a resposta a incidentes.
+* **Data Quality e Observabilidade Avançada** implementar ferramentas de qualidade de dados como Great Expectations e expandir a observabilidade com dashboards customizados.
+
+---
+
+## Considerações Finais
+
+Este projeto representa uma fundação sólida para pipelines de dados modernos com foco em automação, governança e escalabilidade.  
+A metáfora da forja foi escolhida para representar o trabalho cuidadoso e estruturado necessário para transformar dados brutos em ativos valiosos para a organização.
+
+Ao seguir boas práticas de engenharia de dados e infraestrutura como código, o time é capaz de acelerar o ciclo de entrega de valor, garantir rastreabilidade e reduzir riscos operacionais.  
+A arquitetura proposta é modular, extensível e pronta para evoluir conforme novas demandas de negócio e tecnologia.
+
+---
+
+## Autor
+
+José Duque - Engenheiro de Dados ✨

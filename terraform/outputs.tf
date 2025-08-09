@@ -80,21 +80,6 @@ output "cluster_policy" {
   value = databricks_cluster_policy.uc_policy.id
 }
 
-# output "cluster_id" {
-#   description = "Id do cluster"
-#   value = databricks_cluster.main.id
-# }
-
-# output "cluster_key" {
-#   value = databricks_cluster.main.cluster_name
-# }
-
-output "databricks_token_value" {
-  description = "Token para automação"
-  value     = databricks_token.my_automation_token.token_value
-  sensitive = true
-}
-
 output "path_notebooks_bronze" {
   description = "Notebook Path Bronze"
   value = databricks_notebook.bronze_main.path  

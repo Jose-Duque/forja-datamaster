@@ -1,7 +1,3 @@
-variable "project_name" {
-  description = "Nome do projeto (usado como prefixo)."
-  type        = string
-}
 variable "prefix" {
   description = "Prefixo para garantir unicidade e identificação dos recursos."
   type        = string
@@ -40,13 +36,5 @@ variable "databricks_workspace" {
 }
 variable "databricks_user" {
   description = "E-mail do usuário Databricks."
-  type        = string
-}
-variable "cluster_name" {
-  description = "Nome do cluster Databricks."
-  type        = string
-}
-variable "metastore_container_name" {
-  description = "Nome do container dedicado para o Unity Catalog Metastore."
   type        = string
 }
