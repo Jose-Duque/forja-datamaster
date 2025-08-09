@@ -1,18 +1,23 @@
-# Forja — Data Master
+<h1 align="center">Forja — Data Master</h1>
+
 <p align="center">
-  <img src="assets/img/forja.png" width="100" alt="log do projeto">
+  <img src="assets/img/forja.jpg" alt="logo do projeto" width="250">
 </p>
 
-O repositório "**forja-datamaster**" é uma solução para o programa Data Master organizado pela F1rst Santander.
-Solução proposta e desenvolvida por [José Duque](https://www.linkedin.com/in/jos%C3%A9-duque-29a944100/).
+<p align="center">
+  O repositório <strong>forja-datamaster</strong> é uma solução desenvolvida para o programa <strong>Data Master</strong>, organizado pela <strong>F1rst Santander</strong>.  
+  <br>
+  Solução proposta e desenvolvida por 
+  <a href="https://www.linkedin.com/in/jos%C3%A9-duque-29a944100/" target="_blank">José Duque</a>.
+</p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Terraform-844FBA?style=for-the-badge&logo=terraform&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Azure-0089D6?style=for-the-badge&logo=microsoftazure&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Databricks-FF3621?style=for-the-badge&logo=databricks&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Airflow-017CEE?style=for-the-badge&logo=apacheairflow&logoColor=white"/>
-  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"/>
+  <a href="#"><img src="https://img.shields.io/badge/Terraform-844FBA?style=for-the-badge&logo=terraform&logoColor=white"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Azure-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Databricks-EF3E2D?style=for-the-badge&logo=databricks&logoColor=white"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Airflow-017CEE?style=for-the-badge&logo=apacheairflow&logoColor=white"></a>
+  <a href="#"><img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"></a>
 </p>
 
 ---
@@ -64,6 +69,10 @@ Assim como uma **forja** transforma metal bruto em artefatos valiosos, este proj
 ### Visão Geral
 
 A solução utiliza serviços da Azure para provisionar um ambiente completo de ingestão, processamento e disponibilização de dados analíticos com:
+
+<p align="left">
+  <img src="assets/img/arquitetura.PNG" alt="arquitetura do projeto" width="700">
+</p>
 
 * **Armazenamento** em **Azure Data Lake** estruturado no padrão **Medallion** (Raw → Bronze → Silver → Gold).
 * **Processamento** com **Azure Databricks** (Apache Spark + Delta Lake).
