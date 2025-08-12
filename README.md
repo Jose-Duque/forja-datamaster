@@ -152,17 +152,14 @@ A solução utiliza serviços da Azure para provisionar um ambiente completo de 
 * **Boas práticas**: `retries`, `retry_delay`, `max_active_runs`, parametrização por `{{ ds }}`.
 * **Conexões**: `DATABRICKS_HOST` + `POSTGRES_CONN` (Secret/Env). Com UC Volumes, preferir identidade gerenciada.
 * **Observabilidade**: [**Databricks** - **Airflow UI**] (logs, reexecução), métricas e alertas.
-* **Gráficos recomendados**: execuções por status, duração das tarefas, taxa sucesso/erro, *SLA misses*.
-  <p align="left">
-    <img src="assets/img/airflow_cluster.PNG" alt="saude do ambiente" width="250">
-    <img src="assets/img/airflow_failed.PNG" alt="saude do ambiente" width="290">
-    <img src="assets/img/airflow_media.PNG" alt="saude do ambiente" width="290">
-  </p>
-  <p align="left">
-    <img src="assets/img/airflow_run_duration.PNG" alt="saude do ambiente" width="300">
-    <img src="assets/img/airflow_task_duration.PNG" alt="saude do ambiente" width="290">
-    <img src="assets/img/workflow_success.PNG" alt="saude do ambiente" width="270">
-  </p>
+* **Gráficos recomendados** para monitoramento no Airflow:
+
+| Categoria                | Descrição                                                                 | Exemplo |
+|--------------------------|---------------------------------------------------------------------------|---------|
+| **Execuções e Status**   | Quantidade de DAGs executadas por status (sucesso, falha, skip etc.).     | <img src="assets/img/airflow_cluster.PNG" alt="Execuções por status" width="250"> <img src="assets/img/workflow_success.PNG" alt="Taxa de sucesso" width="270"> |
+| **Falhas e Erros**       | Quantidade e taxa de falhas por período, útil para identificar problemas. | <img src="assets/img/airflow_failed.PNG" alt="Falhas no período" width="290"> |
+| **Tempos Médios**        | Tempo médio de execução das DAGs e tarefas.                              | <img src="assets/img/airflow_media.PNG" alt="Tempo médio" width="290"> |
+| **Duração de Execução**  | Distribuição do tempo total das DAGs e tarefas.                          | <img src="assets/img/airflow_run_duration.PNG" alt="Duração por DAG" width="300"> <img src="assets/img/airflow_task_duration.PNG" alt="Duração por tarefa" width="290"> |
 
 ---
 
