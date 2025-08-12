@@ -37,7 +37,7 @@
    * [Infraestrutura Provisionada](#infraestrutura-provisionada)
    * [Criação e Inserção de Dados](#criação-e-inserção-de-dados)
    * [Processamento](#processamento)
-   * [Provisionamento (Terraform)](#provisionamento-terraform)
+   * [Infraestrutura como Código (Terraform)](#infraestrutura-como-código-terraform)
 4. [Orquestração e Monitoramento (Airflow)](#orquestração-e-monitoramento-airflow)
 5. [Transformações (Databricks)](#transformações-databricks)
 6. [Governança e Segurança (Unity Catalog)](#governança-e-segurança-unity-catalog)
@@ -71,7 +71,7 @@ Assim como uma **forja** transforma metal bruto em artefatos valiosos, este proj
 A solução utiliza serviços da Azure para provisionar um ambiente completo de ingestão, processamento e disponibilização de dados analíticos com:
 
 <p align="left">
-  <img src="assets/img/arquitetura.PNG" alt="arquitetura do projeto" width="700">
+  <img src="assets/img/arquitetura.PNG" alt="arquitetura do projeto" width=max-width>
 </p>
 
 * **Armazenamento** em **Azure Data Lake** estruturado no padrão **Medallion** (Raw → Bronze → Silver → Gold).
@@ -102,7 +102,7 @@ A solução utiliza serviços da Azure para provisionar um ambiente completo de 
    * Tabelas Delta publicadas no **Unity Catalog** para acesso por BI/SQL/Notebooks.
 6. **Governança e Segurança**
 
-   * Acesso via Azure AD, segredos no Key Vault, Dados mascarado, lineage e auditoria no UC.
+   * Acesso via Azure AD, segredos no Key Vault, Dados mascarados, lineage e auditoria no UC.
 
 ### Tecnologias Utilizadas
 
@@ -136,7 +136,7 @@ A solução utiliza serviços da Azure para provisionar um ambiente completo de 
 * **ExtractDbSaveToAzure**: extrai do PostgreSQL e persiste no **Raw**.
 * **Pipeline Databricks**: **Raw → Bronze → Silver → Gold**, acionado por DAG no Airflow.
 
-### Provisionamento (Terraform)
+### Infraestrutura como Código (Terraform)
 * Veja mais detalhes sobre a infraestrutura [aqui](./terraform/README.md)
 
 ---
@@ -150,7 +150,7 @@ A solução utiliza serviços da Azure para provisionar um ambiente completo de 
   * `bronze`, `silver`, `gold` (DatabricksWorkflowsTaskGroup ou DatabricksSubmitRunOperator).
   * `cleanup` (PythonOperator) → remove temporários/antigos.
 * **Boas práticas**: `retries`, `retry_delay`, `max_active_runs`, parametrização por `{{ ds }}`.
-* **Conexões**: `DATABRICKS_HOST` + `POSTGRES_CONN` (Secret/Env). Com UC Volumes, preferir identidade gerenciada.
+* **Conexões**: `DATABRICKS_HOST` + `POSTGRES_CONN` (Secret/Env).
 * **Observabilidade**: [**Databricks** - **Airflow UI**] (logs, reexecução), métricas e alertas.
 * **Gráficos recomendados** para monitoramento no Airflow:
 
@@ -176,7 +176,7 @@ A solução utiliza serviços da Azure para provisionar um ambiente completo de 
 
 * **Storage Credential** com identidade gerenciada ou SPN.
 * **External Locations** para `raw/bronze/silver/gold` (`abfss://`).
-* **Dados Mascarado** com coluna criptografada.
+* **Dados Mascarados** com coluna criptografada.
 * **Catálogo/Esquemas**: isolar camadas e aplicar **grants** por grupo/perfil.
 * **Lineage/Auditoria**: use o UC para rastreabilidade e logs de acesso.
 
@@ -231,7 +231,7 @@ A solução utiliza serviços da Azure para provisionar um ambiente completo de 
 * UC configurado (credential, locations, catalog/schemas, grants).
 * DAG executa `extract → ingestion → raw → bronze → silver → gold → cleanup` com logs e *retries*.
 * Tabelas Delta acessíveis com permissões corretas.
-* Custos sob controle (autotermination e tamanhos aprovados).
+* Custos sob controle (auto-termination e tamanhos aprovados).
 
 ---
 
