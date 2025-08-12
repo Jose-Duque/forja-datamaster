@@ -68,15 +68,18 @@ resource "databricks_group" "data_analysts_group" {
   workspace_access         = true
 }
 
-# Define política de cluster para uso com Unity Catalog
+# Define política de cluster para uso com Unity Catalog com autoscale disponível
 resource "databricks_cluster_policy" "uc_policy" {
   name = "unity-catalog-policy"
   definition = jsonencode({
-    data_security_mode       = { type = "fixed", value = "USER_ISOLATION" }
-    spark_version            = { type = "fixed", value = "13.3.x-scala2.12" }
-    node_type_id              = { type = "allowlist", values = ["Standard_DS3_v2", "Standard_DS4_v2", "Standard_F4"] }
-    num_workers               = { type = "range", minValue = 1, maxValue = 5 }
-    autotermination_minutes   = { type = "range", minValue = 10, maxValue = 30 }
+    data_security_mode      = { type = "fixed", value = "USER_ISOLATION" }
+    spark_version           = { type = "fixed", value = "13.3.x-scala2.12" }
+    node_type_id            = { type = "allowlist", values = ["Standard_DS3_v2", "Standard_DS4_v2", "Standard_F4"] }
+    
+    min_workers             = { type = "range", minValue = 1, maxValue = 5 }
+    max_workers             = { type = "range", minValue = 2, maxValue = 10 }
+    
+    autotermination_minutes = { type = "range", minValue = 10, maxValue = 30 }
   })
   depends_on = [azurerm_databricks_workspace.main]
 }

@@ -18,6 +18,7 @@
   <a href="#"><img src="https://img.shields.io/badge/Airflow-017CEE?style=for-the-badge&logo=apacheairflow&logoColor=white"></a>
   <a href="#"><img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white"></a>
   <a href="#"><img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Cluster-Autoescalável-success?style=for-the-badge&logo=apache-spark&logoColor=white"></a>
 </p>
 
 ---
@@ -122,7 +123,7 @@ A solução utiliza serviços da Azure para provisionar um ambiente completo de 
 
 * **Resource Group** e **Storage Account** com containers: `raw`, `bronze`, `silver`, `gold`.
 * **App Registration (SPN)** com **credenciais no Key Vault**.
-* **Databricks Workspace** com **Cluster Policy** **Access Connector**.
+* **Databricks Workspace** com **Cluster Policy** (configuração de segurança e **autoscaling habilitado**) e **Access Connector**.
 * **Unity Catalog**: storage credential, external locations, catálogo/esquemas e **grants**.
 
 ### Criação e Inserção de Dados
@@ -134,7 +135,8 @@ A solução utiliza serviços da Azure para provisionar um ambiente completo de 
 ### Processamento
 
 * **ExtractDbSaveToAzure**: extrai do PostgreSQL e persiste no **Raw**.
-* **Pipeline Databricks**: **Raw → Bronze → Silver → Gold**, acionado por DAG no Airflow.
+* **Pipeline Databricks**: **Raw → Bronze → Silver → Gold**, acionado por DAG no Airflow, executado em clusters **auto-escaláveis** (ajuste dinâmico de nós de acordo com a carga de trabalho).
+
 
 ### Infraestrutura como Código (Terraform)
 * Veja mais detalhes sobre a infraestrutura [aqui](./terraform/README.md)
@@ -201,7 +203,7 @@ A solução utiliza serviços da Azure para provisionar um ambiente completo de 
 
 ## Operação & Custos
 
-* **Job clusters** com **autotermination** (10–15 min).
+* **Job clusters** com **autoscaling** (ajuste automático entre o mínimo e o máximo de nós permitidos) e **autotermination** (10–15 min).
 * Allowlist de `node_type_id` e tamanhos econômicos.
 * Alertas de **quota** (cores/VM) e **falhas**.
 
