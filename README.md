@@ -102,13 +102,17 @@ A solução utiliza serviços da Azure para provisionar um ambiente completo de 
    * Tabelas Delta publicadas no **Unity Catalog** para acesso por BI/SQL/Notebooks.
 6. **Governança e Segurança**
 
-   * Acesso via Azure AD, segredos no Key Vault, lineage e auditoria no UC.
+   * Acesso via Azure AD, segredos no Key Vault, Dados mascarado, lineage e auditoria no UC.
 
 ### Tecnologias Utilizadas
 
-* **Azure**: Resource Groups, Storage (ADLS Gen2), Key Vault, Azure AD (SPN).
-* **Databricks**: Workspace, Jobs/Workflows, Cluster Policies, Unity Catalog.
-* **Airflow** (Astronomer), **PostgreSQL**, **Terraform**, **Docker**.
+| Plataforma/Serviço | Recursos/Componentes |
+|--------------------|----------------------|
+| **Azure**          | Resource Groups, Storage (ADLS Gen2), Key Vault, Azure AD (SPN) |
+| **Databricks**     | Workspace, Jobs/Workflows, Cluster Policies, Unity Catalog |
+| **Airflow**        | Astronomer |
+| **Banco de Dados** | PostgreSQL |
+| **Infraestrutura** | Terraform, Docker |
 
 ---
 
@@ -149,6 +153,16 @@ A solução utiliza serviços da Azure para provisionar um ambiente completo de 
 * **Conexões**: `DATABRICKS_HOST` + `POSTGRES_CONN` (Secret/Env). Com UC Volumes, preferir identidade gerenciada.
 * **Observabilidade**: [**Databricks** - **Airflow UI**] (logs, reexecução), métricas e alertas.
 * **Gráficos recomendados**: execuções por status, duração das tarefas, taxa sucesso/erro, *SLA misses*.
+  <p align="left">
+    <img src="assets/img/airflow_cluster.PNG" alt="saude do ambiente" width="250">
+    <img src="assets/img/airflow_failed.PNG" alt="saude do ambiente" width="290">
+    <img src="assets/img/airflow_media.PNG" alt="saude do ambiente" width="290">
+  </p>
+  <p align="left">
+    <img src="assets/img/airflow_run_duration.PNG" alt="saude do ambiente" width="300">
+    <img src="assets/img/airflow_task_duration.PNG" alt="saude do ambiente" width="290">
+    <img src="assets/img/workflow_success.PNG" alt="saude do ambiente" width="270">
+  </p>
 
 ---
 
@@ -165,6 +179,7 @@ A solução utiliza serviços da Azure para provisionar um ambiente completo de 
 
 * **Storage Credential** com identidade gerenciada ou SPN.
 * **External Locations** para `raw/bronze/silver/gold` (`abfss://`).
+* **Dados Mascarado** com coluna criptografada.
 * **Catálogo/Esquemas**: isolar camadas e aplicar **grants** por grupo/perfil.
 * **Lineage/Auditoria**: use o UC para rastreabilidade e logs de acesso.
 
