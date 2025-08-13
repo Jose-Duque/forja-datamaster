@@ -59,30 +59,24 @@ resource "databricks_secret_acl" "spn_read_secret" {
   permission = "READ"
 }
 
-# Cria grupo de usuários no Databricks
-resource "databricks_group" "data_analysts_group" {
-  display_name             = "data-analysts-group"
-  allow_cluster_create     = true
-  allow_instance_pool_create = true
-  databricks_sql_access    = true
-  workspace_access         = true
-}
-
 # Define política de cluster para uso com Unity Catalog com autoscale disponível
 resource "databricks_cluster_policy" "uc_policy" {
   name = "unity-catalog-policy"
+
   definition = jsonencode({
-    data_security_mode      = { type = "fixed", value = "USER_ISOLATION" }
-    spark_version           = { type = "fixed", value = "13.3.x-scala2.12" }
-    node_type_id            = { type = "allowlist", values = ["Standard_DS3_v2", "Standard_DS4_v2", "Standard_F4"] }
-    
-    min_workers             = { type = "range", minValue = 1, maxValue = 5 }
-    max_workers             = { type = "range", minValue = 2, maxValue = 10 }
-    
+    data_security_mode = { type = "fixed", value = "USER_ISOLATION" }
+    spark_version      = { type = "fixed", value = "13.3.x-scala2.12" }
+    node_type_id       = { type = "allowlist", values = ["Standard_DS3_v2", "Standard_DS4_v2", "Standard_F4"] }
+
+    "autoscale.min_workers" = { type = "range", minValue = 1, maxValue = 5, isOptional = true }
+    "autoscale.max_workers" = { type = "range", minValue = 2, maxValue = 10, isOptional = true }
+
     autotermination_minutes = { type = "range", minValue = 10, maxValue = 30 }
   })
+
   depends_on = [azurerm_databricks_workspace.main]
 }
+
 
 # Concede ao SPN permissão para usar a política de cluster
 resource "databricks_permissions" "uc_policy_can_use" {

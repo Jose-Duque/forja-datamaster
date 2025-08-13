@@ -33,11 +33,6 @@ resource "databricks_grants" "spn_catalog_use" {
     principal  = azuread_application.main.client_id
     privileges = ["ALL PRIVILEGES"]
   }
-
-  grant {
-    principal  = databricks_group.data_analysts_group.display_name
-    privileges = ["USE_CATALOG"]
-  }
 }
 
 # Concede todos os privilégios nos schemas para o SPN e permissão de USER/SELECT para o grupo de analistas
@@ -48,10 +43,5 @@ resource "databricks_grants" "spn_schema_use" {
   grant {
     principal  = azuread_application.main.client_id
     privileges = ["ALL PRIVILEGES"]
-  }
-
-  grant {
-    principal  = databricks_group.data_analysts_group.display_name
-    privileges = ["USE_SCHEMA", "SELECT"]
   }
 }

@@ -19,11 +19,11 @@ def build_job_cluster_spec(datalake_name, spn_client_id, tenant_id, secret_scope
                 }
                 },
                 "spark_conf": {
-                "fs.azure.account.auth.type.<datalake_name>.dfs.core.windows.net": "OAuth",
-                "fs.azure.account.oauth.provider.type.<datalake_name>.dfs.core.windows.net": "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider",
-                "fs.azure.account.oauth2.client.id.<datalake_name>.dfs.core.windows.net": spn_client_id,
-                "fs.azure.account.oauth2.client.secret.<datalake_name>.dfs.core.windows.net": "{{secrets/<secret_scope>/<secret_key>}}",
-                "fs.azure.account.oauth2.client.endpoint.<datalake_name>.dfs.core.windows.net": "https://login.microsoftonline.com/<tenant_id>/oauth2/token"
+                f"fs.azure.account.auth.type.{datalake_name}.dfs.core.windows.net": "OAuth",
+                f"fs.azure.account.oauth.provider.type.{datalake_name}.dfs.core.windows.net": "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider",
+                f"fs.azure.account.oauth2.client.id.{datalake_name}.dfs.core.windows.net": spn_client_id,
+                f"fs.azure.account.oauth2.client.secret.{datalake_name}.dfs.core.windows.net": f"{{secrets/{secret_scope}/{secret_key}}}",
+                f"fs.azure.account.oauth2.client.endpoint.{datalake_name}.dfs.core.windows.net": f"https://login.microsoftonline.com/{tenant_id}/oauth2/token"
                 },
                 "data_security_mode": "USER_ISOLATION",
                 "custom_tags": {
