@@ -1,6 +1,6 @@
 # Data Master — Infra Azure + Databricks (Terraform)
 
-Provisionamento de um ambiente **Azure + Databricks** com **governança via Unity Catalog**, **segredos no Key Vault**, **SPN para automação**, **Access Connector** e **estruturas base do lago de dados (raw/bronze/silver/gold)** — tudo com Terraform.
+Provisionamento de um ambiente **Azure + Databricks** com **governança via Unity Catalog**, **segredos no Key Vault**, **SPN para automação**, **Access Connector** e **estruturas base do data lake (raw/bronze/silver/gold)** — tudo com Terraform.
 
 <p align="center">
   Azure • Databricks • Unity Catalog • Key Vault • Azure AD • Terraform
@@ -29,7 +29,7 @@ Provisionamento de um ambiente **Azure + Databricks** com **governança via Unit
   - **Storage Credential** (via Access Connector).
   - **External Locations** para cada camada.
   - **Schemas** `raw/bronze/silver/gold` no **catálogo = nome do workspace**.
-  - **Grants** para SPN e grupo de usuários.
+  - **Grants** para SPN.
 - **Secret Scope** no Databricks e secret com a senha da SPN.
 - **Grupo** `data-analysts-group`, **Cluster Policy** “Unity Catalog”.
 - **Notebooks** (bronze/silver/gold) publicados no workspace do usuário informado.
@@ -49,14 +49,12 @@ Provisionamento de um ambiente **Azure + Databricks** com **governança via Unit
 - `azurerm_databricks_access_connector.main`
 - `databricks_service_principal.main` (mapeia a aplicação AAD no workspace)
 - `databricks_secret_scope.app` + `databricks_secret.publishing_api` + `databricks_secret_acl.spn_read_secret`
-- `databricks_group.data_analysts_group`
 - `databricks_cluster_policy.uc_policy` + `databricks_permissions.uc_policy_can_use`
 - `databricks_notebook.*` (bronze/silver/gold e utils)
 - `databricks_storage_credential.uc_credential`
 - `databricks_external_location.medallion_locations` (raw/bronze/silver/gold)
 - `databricks_schema.medallion_schemas` (no catálogo = nome do workspace)
 - Grants:
-  - `databricks_grants.analysts_usage`
   - `databricks_grants.spn_extloc_read`
   - `databricks_grants.spn_catalog_use`
   - `databricks_grants.spn_schema_use`
@@ -165,7 +163,6 @@ Provisionamento de um ambiente **Azure + Databricks** com **governança via Unit
 - **Schemas**: `raw`, `bronze`, `silver`, `gold`.
 - **External Locations**: apontam para `abfss://<layer>@<storage>.dfs.core.windows.net/`.
 - **Cluster Policy**: `unity-catalog-policy` (modo `USER_ISOLATION`, versões e tipos de nó permitidos, `autotermination` 10–30 min).
-- **Grupo**: `data-analysts-group` com `USE_CATALOG`/`USE_SCHEMA` apropriados.
 - **SPN**: possui `ALL PRIVILEGES` no catálogo/schemas e nos external locations; secret lida via `databricks_secret_scope.app`.
 
 ---

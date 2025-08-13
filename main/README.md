@@ -124,9 +124,3 @@ Após a execução:
 ## Autor
 
 José Duque - Engenheiro de Dados ✨
-
----
-
-## 📄 Licença
-
-MIT – © 2025 | Provisionamento automatizado com Terraform, Azure e Astronomer

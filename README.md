@@ -145,12 +145,18 @@ A solução utiliza serviços da Azure para provisionar um ambiente completo de 
 
 ## Orquestração e Monitoramento (Airflow)
 
-* **DAGs** principais:
-
-  * `extract_from_source` (PythonOperator) → grava em `raw/`.
-  * `ingest_control` (PythonOperator) → valida partições/headers e aciona Databricks.
-  * `bronze`, `silver`, `gold` (DatabricksWorkflowsTaskGroup ou DatabricksSubmitRunOperator).
-  * `cleanup` (PythonOperator) → remove temporários/antigos.
+* **DAGs** `extract-load-transform`: Esta DAG realiza um **pipeline ELT (Extract, Load, Transform)** completo, integrando **PostgreSQL**, **Azure Blob Storage** e **Databricks Unity Catalog**.
+    * `Fluxo resumido`
+      1. **Init** → Marca o início da execução.  
+      2. **Create Table** → Cria tabelas no PostgreSQL para todas as entidades da lista `TABLE_NAMES`.  
+      3. **Insert Table** → Insere dados iniciais nas tabelas criadas.  
+      4. **Ingestion to Data Lake** → Exporta dados do PostgreSQL para o **Azure Blob Storage** (camada `raw/`).  
+      5. **Databricks Workflow**:  
+         - **Bronze Layer** → Ingestão e criptografia de colunas sensíveis (ex.: `cpf_cnpj`) no Databricks.  
+         - **Silver Layer** → Transformações específicas (renomear colunas, aplicar queries SQL).  
+         - **Gold Layer** → Agregações e análises (ex.: vendas por cliente, ticket médio, etc.).  
+      6. **Delete File Container** → Remove arquivos temporários da pasta de ingestão no Azure Blob.  
+      7. **Finish** → Marca o fim da execução.
 * **Boas práticas**: `retries`, `retry_delay`, `max_active_runs`, parametrização por `{{ ds }}`.
 * **Conexões**: `DATABRICKS_HOST` + `POSTGRES_CONN` (Secret/Env).
 * **Observabilidade**: [**Databricks** - **Airflow UI**] (logs, reexecução), métricas e alertas.
@@ -181,23 +187,6 @@ A solução utiliza serviços da Azure para provisionar um ambiente completo de 
 * **Dados Mascarados** com coluna criptografada.
 * **Catálogo/Esquemas**: isolar camadas e aplicar **grants** por grupo/perfil.
 * **Lineage/Auditoria**: use o UC para rastreabilidade e logs de acesso.
-
----
-
-## Execução do Projeto
-
-* Pré-requisitos
-
-- [Azure CLI (`az`)](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
-- [Terraform](https://developer.hashicorp.com/terraform/install)
-- [Docker](https://www.docker.com/products/docker-desktop/)
-- [Astronomer CLI (`astro`)](https://docs.astronomer.io/astro/cli/install-cli)
-- [Python 3](https://www.python.org/downloads/)
-- [Git](https://git-scm.com/)
-
-### Validar e executar DAGs
-
-* **DAG** `extract-load-transform`: PostgreSQL → Raw → Bronze → Silver → Gold.
 
 ---
 
