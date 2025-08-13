@@ -1,0 +1,10 @@
+prefix                          = "mydatalake"
+resource_group_name             = "rg-br-datamaster"
+location                        = "brazilsouth"
+environment                     = "analytics"
+storage_account_name            = "stgbrdatalake"
+key_vault_name                  = "kvsecretsdb"
+spn_display_name                = "spn-datamaster-access"
+container_names                 = ["raw", "bronze", "silver", "gold"]
+databricks_workspace            = "datamasterbr"
+databricks_user                 = "duque.datamaster@outlook.com"

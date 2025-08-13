@@ -1,0 +1,60 @@
+{
+    "tabelas": {
+        "cidades": {
+            "id_cidades": "INTEGER",
+            "cidade": "VARCHAR(255)",
+            "id_estados": "INTEGER",
+            "data_inclusao": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP",
+            "data_atualizacao": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP"
+        },
+        "clientes": {
+            "id_clientes": "INTEGER",
+            "cpf_cnpj": "VARCHAR(255)",
+            "cliente": "VARCHAR(255)",
+            "endereco": "VARCHAR(255)",
+            "id_concessionarias": "INTEGER",
+            "data_inclusao": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP",
+            "data_atualizacao": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP"
+        },
+        "concessionarias": {
+            "id_concessionarias": "INTEGER",
+            "concessionaria": "VARCHAR(255)",
+            "id_cidades": "INTEGER",
+            "data_inclusao": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP",
+            "data_atualizacao": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP"
+        },
+        "estados": {
+            "id_estados": "INTEGER",
+            "estado": "VARCHAR(255)",
+            "sigla": "VARCHAR(2)",
+            "data_inclusao": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP",
+            "data_atualizacao": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP"
+        },
+        "veiculos": {
+            "id_veiculos": "INTEGER",
+            "nome": "VARCHAR(255)",
+            "tipo": "VARCHAR(100)",
+            "valor": "NUMERIC(10,2)",
+            "data_inclusao": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP",
+            "data_atualizacao": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP"
+        },
+        "vendas": {
+            "id_vendas": "INTEGER",
+            "id_veiculos": "INTEGER",
+            "id_concessionarias": "INTEGER",
+            "id_vendedores": "INTEGER",
+            "id_clientes": "INTEGER",
+            "valor_pago": "NUMERIC(10,2)",
+            "data_venda": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP",
+            "data_inclusao": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP",
+            "data_atualizacao": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP"
+        },
+        "vendedores": {
+            "id_vendedores": "INTEGER",
+            "nome": "VARCHAR(255)",
+            "id_concessionarias": "INTEGER",
+            "data_inclusao": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP",
+            "data_atualizacao": "TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP"
+        }
+    }
+}
