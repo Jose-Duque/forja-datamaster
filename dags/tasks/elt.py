@@ -1,6 +1,4 @@
-from datetime import datetime, timedelta
-import os
-from dotenv import load_dotenv
+from datetime import datetime
 from dags.models.ddl import Ddl
 from dags.models.dml import Dml
 from dags.utils.data_export_pipeline import DatabaseToAzureBlobPipeline
