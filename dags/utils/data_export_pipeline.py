@@ -1,4 +1,3 @@
-import os
 from io import StringIO
 import psycopg2
 import pandas as pd
@@ -73,6 +72,7 @@ class DatabaseToAzureBlobPipeline:
             raise Exception(self.log_message("error", f"Erro ao salvar os dados no Azure: {e}"))
 
     def delete_blobs_inside_folder(self, folder: str):
+        """Remove todos os blobs (arquivos) dentro de uma pasta específica no container do Azure Blob Storage."""
         try:
             blob_service_client = BlobServiceClient.from_connection_string(self.azure_config["connection_string"])
             container_client = blob_service_client.get_container_client(self.azure_config["container_name"])
