@@ -1,6 +1,13 @@
 from dags.utils.terraform_outputs import TerraformOutputManager
 
-def build_job_cluster_spec(datalake_name, spn_client_id, tenant_id, secret_scope, secret_key, databricks_access_connector):
+def build_job_cluster_spec(
+        datalake_name: str, 
+        spn_client_id: str, 
+        tenant_id: str, 
+        secret_scope: str, 
+        secret_key: str, 
+        databricks_access_connector: str
+    ):
     return [
         {
             "job_cluster_key": "cluster-data-analytics",
