@@ -8,6 +8,10 @@ class TerraformOutputManager:
         self._load_outputs()
 
     def _load_outputs(self):
+        """
+        Carrega os outputs do Terraform a partir de um arquivo JSON.
+        Caso o arquivo não exista ou esteja inválido, exibe mensagens de erro e mantém os outputs vazios.
+        """
         if not os.path.exists(self.output_file):
             print(f"Erro: O arquivo '{self.output_file}' não foi encontrado.")
             print("Certifique-se de ter executado 'terraform output -json > {self.output_file}' no diretório do seu projeto Terraform.")
@@ -28,6 +32,7 @@ class TerraformOutputManager:
             self.outputs = {}
 
     def get_output(self, key: str, default=None):
+        """Obtém um output específico do Terraform pelo nome da chave."""
         if key in self.outputs:
             return self.outputs[key].get("value", default)
         else:
@@ -35,6 +40,7 @@ class TerraformOutputManager:
             return default
 
     def get_all_outputs(self) -> dict:
+        """ Retorna todos os outputs simplificados (apenas chave e valor, sem metadados)."""
         simplified_outputs = {}
         for key, details in self.outputs.items():
             if "value" in details:
