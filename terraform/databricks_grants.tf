@@ -12,6 +12,7 @@ resource "databricks_grants" "analysts_usage" {
   }
 
   catalog = var.databricks_workspace
+  depends_on = [databricks_service_principal.main]
 }
 
 # Concede todos os privilégios de acesso nas External Locations para o SPN
@@ -24,6 +25,7 @@ resource "databricks_grants" "spn_extloc_read" {
     principal  = azuread_application.main.client_id
     privileges = ["ALL PRIVILEGES"]
   }
+  depends_on = [databricks_service_principal.main]
 }
 
 # Concede todos os privilégios no catálogo para o SPN e acesso de USER para o grupo de analistas
@@ -33,6 +35,7 @@ resource "databricks_grants" "spn_catalog_use" {
     principal  = azuread_application.main.client_id
     privileges = ["ALL PRIVILEGES"]
   }
+  depends_on = [databricks_service_principal.main]
 }
 
 # Concede todos os privilégios nos schemas para o SPN e permissão de USER/SELECT para o grupo de analistas
@@ -44,4 +47,5 @@ resource "databricks_grants" "spn_schema_use" {
     principal  = azuread_application.main.client_id
     privileges = ["ALL PRIVILEGES"]
   }
+  depends_on = [databricks_service_principal.main]
 }
