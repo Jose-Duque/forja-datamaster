@@ -21,7 +21,7 @@ resource "databricks_grants" "schemas" {
 
   grant {
     principal  = azuread_application.main.client_id
-    privileges = ["USE_SCHEMA", "SELECT", "MODIFY"]
+    privileges = ["USE_SCHEMA", "SELECT", "MODIFY", "CREATE_TABLE"]
   }
 
   grant {
@@ -38,6 +38,6 @@ resource "databricks_grants" "extlocs" {
 
   grant {
     principal  = azuread_application.main.client_id
-    privileges = ["READ_FILES", "WRITE_FILES"]
+    privileges = ["READ_FILES", "WRITE_FILES", "CREATE_EXTERNAL_TABLE"]
   }
 }
