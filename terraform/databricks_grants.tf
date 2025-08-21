@@ -1,51 +1,43 @@
-# Concede todos os privilégios no catálogo e schemas para o usuário e SPN
-resource "databricks_grants" "analysts_usage" {
-  grant {
-    principal  = var.databricks_user
-    privileges = ["ALL PRIVILEGES"]
-  }
+# Catálogo
+resource "databricks_grants" "catalog" {
+  catalog = var.databricks_workspace
 
-  for_each = databricks_schema.medallion_schemas
   grant {
     principal  = azuread_application.main.client_id
-    privileges = ["ALL PRIVILEGES"]
+    privileges = ["USE_CATALOG", "MODIFY"]
   }
 
-  catalog = var.databricks_workspace
-  depends_on = [databricks_service_principal.main]
+  grant {
+    principal  = var.databricks_user
+    privileges = ["USE_CATALOG"]
+  }
 }
 
-# Concede todos os privilégios de acesso nas External Locations para o SPN
-resource "databricks_grants" "spn_extloc_read" {
+# Schemas
+resource "databricks_grants" "schemas" {
+  for_each = databricks_schema.medallion_schemas
+
+  schema = each.value.id
+
+  grant {
+    principal  = azuread_application.main.client_id
+    privileges = ["USE_SCHEMA", "SELECT", "MODIFY"]
+  }
+
+  grant {
+    principal  = var.databricks_user
+    privileges = ["USE_SCHEMA", "SELECT"]
+  }
+}
+
+# External Locations
+resource "databricks_grants" "extlocs" {
   for_each = databricks_external_location.medallion_locations
 
   external_location = each.value.name
 
   grant {
     principal  = azuread_application.main.client_id
-    privileges = ["ALL PRIVILEGES"]
+    privileges = ["READ_FILES", "WRITE_FILES"]
   }
-  depends_on = [databricks_service_principal.main]
-}
-
-# Concede todos os privilégios no catálogo para o SPN e acesso de USER para o grupo de analistas
-resource "databricks_grants" "spn_catalog_use" {
-  catalog = var.databricks_workspace
-  grant {
-    principal  = azuread_application.main.client_id
-    privileges = ["ALL PRIVILEGES"]
-  }
-  depends_on = [databricks_service_principal.main]
-}
-
-# Concede todos os privilégios nos schemas para o SPN e permissão de USER/SELECT para o grupo de analistas
-resource "databricks_grants" "spn_schema_use" {
-  for_each = databricks_schema.medallion_schemas
-
-  schema = each.value.id
-  grant {
-    principal  = azuread_application.main.client_id
-    privileges = ["ALL PRIVILEGES"]
-  }
-  depends_on = [databricks_service_principal.main]
 }
