@@ -11,6 +11,11 @@ resource "databricks_grants" "catalog" {
     principal  = var.databricks_user
     privileges = ["USE_CATALOG"]
   }
+  
+  depends_on = [
+    databricks_service_principal.main,
+    azuread_application.main.client_id
+  ]
 }
 
 # Schemas
@@ -28,6 +33,11 @@ resource "databricks_grants" "schemas" {
     principal  = var.databricks_user
     privileges = ["USE_SCHEMA", "SELECT"]
   }
+
+  depends_on = [
+    databricks_service_principal.main,
+    azuread_application.main.client_id
+  ]
 }
 
 # External Locations
@@ -40,4 +50,9 @@ resource "databricks_grants" "extlocs" {
     principal  = azuread_application.main.client_id
     privileges = ["READ_FILES", "WRITE_FILES", "CREATE_EXTERNAL_TABLE"]
   }
+
+  depends_on = [
+    databricks_service_principal.main,
+    azuread_application.main.client_id
+  ]
 }
