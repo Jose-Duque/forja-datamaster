@@ -14,7 +14,7 @@ resource "databricks_grants" "catalog" {
   
   depends_on = [
     databricks_service_principal.main,
-    azuread_application.main.client_id
+    azuread_application.main
   ]
 }
 
@@ -36,7 +36,7 @@ resource "databricks_grants" "schemas" {
 
   depends_on = [
     databricks_service_principal.main,
-    azuread_application.main.client_id
+    azuread_application.main
   ]
 }
 
@@ -53,6 +53,6 @@ resource "databricks_grants" "extlocs" {
 
   depends_on = [
     databricks_service_principal.main,
-    azuread_application.main.client_id
+    azuread_application.main
   ]
 }
